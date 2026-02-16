@@ -11,6 +11,40 @@ Run a comprehensive Python code quality pipeline. Parse `$ARGUMENTS`:
 
 Execute all phases sequentially, producing a final structured report.
 
+---
+
+## Authoritative Python References
+
+Use these as source of truth when judging patterns and as tie-breakers for recommendations.
+
+| Domain | Reference |
+|---|---|
+| **Logging** | [Logging HOWTO](https://docs.python.org/3/howto/logging.html) — prefer `logger = logging.getLogger(__name__)`, module-level loggers, lazy formatting |
+| **Exceptions** | [Errors & Exceptions](https://docs.python.org/3/tutorial/errors.html) — specific except clauses, proper re-raise with `raise ... from`, avoid bare `except:` |
+| **Stdlib Security** | [Security Considerations](https://docs.python.org/3/library/security_warnings.html) — `random` vs `secrets`, `pickle` with untrusted data, `subprocess` shell=True, `tempfile.mktemp` |
+
+**Tool references** (use to explain tool output):
+Ruff: https://docs.astral.sh/ruff/ · Black: https://black.readthedocs.io/ · mypy: https://mypy.readthedocs.io/ · pytest: https://docs.pytest.org/ · pre-commit: https://pre-commit.com/ · Bandit: https://bandit.readthedocs.io/ · pip-audit: https://github.com/pypa/pip-audit · pycodestyle: https://pycodestyle.pycqa.org/ · pydocstyle: https://pep257.readthedocs.io/
+
+### Reporting rule (required)
+
+For **any** finding related to Logging, Exceptions, or Stdlib-Security, include a `Ref:` line in the Fix Suggestions section pointing to the relevant Python doc above. Examples:
+```
+3. [S311] use of random for cryptographic purposes at crypto.py:18 (severity: HIGH)
+   FIX: Replace random.randint() with secrets.randbelow()
+   Ref: https://docs.python.org/3/library/security_warnings.html
+
+4. [LOG001] bare logging.warning() call at handler.py:55 (severity: MED)
+   FIX: Use module logger: logger = logging.getLogger(__name__); logger.warning(...)
+   Ref: https://docs.python.org/3/howto/logging.html
+
+5. [B001] bare except clause at service.py:30 (severity: MED)
+   FIX: Catch specific exceptions: except ValueError as e:
+   Ref: https://docs.python.org/3/tutorial/errors.html
+```
+
+---
+
 ## Output Management (IMPORTANT — follow throughout all phases)
 
 Tool output on real codebases can be enormous. To avoid overwhelming context:
