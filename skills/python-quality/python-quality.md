@@ -1,6 +1,6 @@
 ---
 description: Run comprehensive Python code quality checks (lint, format, type, test, security, deps)
-argument-hint: [target-path] [--fix]
+argument-hint: "<target-path> --fix"
 allowed-tools: Bash, Read, Grep, Glob
 ---
 
