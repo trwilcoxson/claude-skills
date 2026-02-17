@@ -38,16 +38,43 @@ Runs comprehensive Python code quality checks in a single invocation. Orchestrat
 /python-quality src/ --fix   # Both
 ```
 
+### `/threat-model` — Architectural Threat Modeling
+
+Produces an architectural threat model with Mermaid data flow diagrams, STRIDE-LM threat identification, PASTA attack simulation, and OWASP Risk Rating prioritization.
+
+**Features:**
+- 8-phase structured analysis (reconnaissance through final report)
+- Two-pass Mermaid diagrams: structural DFD + risk overlay
+- STRIDE-LM coverage across all components (Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege, Lateral Movement)
+- PASTA likelihood/impact scoring mapped to OWASP Risk Rating severity bands
+- MITRE ATT&CK and CWE cross-referencing
+- Remediation roadmap with wave-based prioritization
+- Designed for use by the [security-architect agent](https://github.com/trwilcoxson/claude-agents)
+
+**Included files:**
+- `SKILL.md` — Main skill definition with 8-phase methodology
+- `references/frameworks.md` — MITRE ATT&CK, CWE, OWASP reference tables
+- `references/mermaid-conventions.md` — Mermaid diagram syntax and styling standards
+- `references/analysis-checklists.md` — Phase-specific validation checklists
+- `report-template.md` — Deterministic report template enforcing consistent section ordering, table structures, and cross-reference integrity across all runs
+
+**Usage:**
+```
+/threat-model                # Run against current project
+```
+
 ## Installation
 
-Copy any skill's `.md` file to your Claude Code commands directory:
+Copy any skill's directory to your Claude Code skills directory:
 
 ```bash
 # Global (available in all projects)
-cp skills/python-quality/python-quality.md ~/.claude/commands/python-quality.md
+cp -r skills/python-quality ~/.claude/skills/python-quality
+cp -r skills/threat-model ~/.claude/skills/threat-model
 
 # Project-specific
-cp skills/python-quality/python-quality.md .claude/commands/python-quality.md
+cp -r skills/python-quality .claude/skills/python-quality
+cp -r skills/threat-model .claude/skills/threat-model
 ```
 
 Then restart Claude Code or start a new session. The skill will appear in autocomplete when you type `/`.
@@ -57,7 +84,14 @@ Then restart Claude Code or start a new session. The skill will appear in autoco
 ```
 skills/
   python-quality/
-    python-quality.md    # The skill file (copy to ~/.claude/commands/)
+    python-quality.md                      # The skill file
+  threat-model/
+    SKILL.md                               # Main skill definition (8-phase methodology)
+    report-template.md                     # Deterministic report template
+    references/
+      frameworks.md                        # MITRE ATT&CK, CWE, OWASP tables
+      mermaid-conventions.md               # Diagram syntax standards
+      analysis-checklists.md               # Phase validation checklists
 ```
 
 ## License
