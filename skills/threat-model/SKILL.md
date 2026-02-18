@@ -27,6 +27,87 @@ Define `{output_dir}` as `{project_root}/threat-model-output/` unless the user s
 
 This section guides the **parent conversation** (which has all tools: Task, TaskOutput, etc.) through spawning and sequencing agents. No spawned agent handles orchestration — the parent does it all, and every agent runs as a flat peer visible to the user.
 
+### Pipeline Architecture (Team Mode)
+
+```mermaid
+flowchart TD
+    subgraph "Phase 1 — Reconnaissance (blocking)"
+        SA1([security-architect\nPhase 1])
+        SA1 -->|writes| R1[01-reconnaissance.md\n+ exec log]
+        SA1 -->|writes| VC[visual-completeness-checklist.md]
+    end
+
+    subgraph "Phase 2 — Structural Diagram (blocking)"
+        DS2([diagram-specialist\nPhase 2])
+        R1 -->|reads| DS2
+        VC -->|reads| DS2
+        DS2 -->|writes| R2[02-structural-diagram.md\n+ exec log]
+    end
+
+    subgraph "Phases 3-6, 8 — Analysis (blocking)"
+        SA2([security-architect\nPhases 3-6, 8])
+        R1 -->|reads| SA2
+        R2 -->|reads| SA2
+        SA2 -->|writes| R3[03-threat-identification.md]
+        SA2 -->|writes| R4[04-risk-quantification.md]
+        SA2 -->|writes| R5[05-false-negative-hunting.md]
+        SA2 -->|writes| R6[06-validated-findings.md]
+        SA2 -->|writes| R8[08-threat-model-report.md\n+ exec log]
+    end
+
+    subgraph "Phase 7 — Risk Overlay (blocking)"
+        DS7([diagram-specialist\nPhase 7])
+        R2 -->|reads| DS7
+        R4 -->|reads| DS7
+        R5 -->|reads| DS7
+        R6 -->|reads| DS7
+        DS7 -->|writes| R7[07-final-diagram.md\n+ exec log]
+    end
+
+    subgraph "Specialists (parallel, background)"
+        PA([privacy-agent])
+        GRC([grc-agent])
+        CR([code-review-agent])
+        R1 -->|reads| PA
+        R1 -->|reads| GRC
+        R1 -->|reads| CR
+        PA -->|writes| PO[privacy-assessment.md\n+ exec log]
+        GRC -->|writes| GO[compliance-gap-analysis.md\n+ exec log]
+        CR -->|writes| CO[code-security-review.md\n+ exec log]
+    end
+
+    subgraph "Validation (blocking)"
+        VS([validation-specialist])
+        R1 & R2 & R3 & R4 & R5 & R6 & R7 & R8 & PO & GO & CO -->|reads| VS
+        VS -->|writes| VR[validation-report.md]
+    end
+
+    subgraph "Report Generation (blocking)"
+        RA([report-analyst])
+        VR -->|reads| RA
+        RA -->|writes| HTML[report.html]
+        RA -->|writes| DOCX[report.docx]
+        RA -->|writes| PDF[report.pdf]
+        RA -->|writes| PPTX[executive-summary.pptx]
+        RA -->|writes| GL[report-generation-log.md]
+    end
+
+    subgraph "Post-Assessment (parent orchestrator)"
+        VF{Verification}
+        HTML & DOCX & PDF & PPTX & GL -->|checks| VF
+        VF -->|writes| PS[pipeline-summary.md]
+    end
+
+    style GL fill:#f9e79f,stroke:#f39c12,stroke-width:2px
+    style PS fill:#f9e79f,stroke:#f39c12,stroke-width:2px
+    style VF fill:#f9e79f,stroke:#f39c12,stroke-width:2px
+```
+
+**Logging touchpoints** (highlighted in yellow):
+- Every agent writes an `## Execution Log` section in its output file (process health, issues, skips, assumptions)
+- Report-analyst writes a dedicated `report-generation-log.md` (per-deliverable status, diagram rendering results, HTML validation checks)
+- Parent orchestrator writes `pipeline-summary.md` (agent execution summary, deliverable verification, overall health)
+
 ### Solo vs Team Decision
 
 **Default: Team mode.** Most real systems benefit from multi-domain analysis. Only use Solo for genuinely simple or narrowly-scoped requests.
@@ -136,43 +217,43 @@ Substitute `{output_dir}` and `{project_root}` with actual paths in all prompts 
 
 #### Solo — security-architect Phase 1 prompt
 
-> You are performing Phase 1 (Reconnaissance) of a solo threat model assessment against the project at {project_root}. Write output to {output_dir}/. Create the output directory if it does not exist. You have the threat-model skill loaded — execute ONLY Phase 1. Write 01-reconnaissance.md and visual-completeness-checklist.md. Be thorough — this reconnaissance is the foundation for all subsequent phases. Do NOT proceed to Phase 2 or any other phase.
+> You are performing Phase 1 (Reconnaissance) of a solo threat model assessment against the project at {project_root}. Write output to {output_dir}/. Create the output directory if it does not exist. You have the threat-model skill loaded — execute ONLY Phase 1. Write 01-reconnaissance.md and visual-completeness-checklist.md. Be thorough — this reconnaissance is the foundation for all subsequent phases. Do NOT proceed to Phase 2 or any other phase. EXECUTION LOG: At the end of 01-reconnaissance.md, include an ## Execution Log section per the agent output protocol at ~/.claude/skills/threat-model/references/agent-output-protocol.md — document process health, what went well, issues encountered, what was skipped, and assumptions made during this phase.
 
 #### Solo — security-architect Phases 3-6,8 prompt
 
-> You are performing Phases 3-6 and 8 of a solo threat model assessment against the project at {project_root}. Output directory: {output_dir}/. FIRST: Read back 01-reconnaissance.md and 02-structural-diagram.md from {output_dir}/ to re-establish context — these were produced by prior agents in this pipeline. You have the threat-model skill loaded — execute Phases 3, 4, 5, 6, and 8 (summary only). Write 03-threat-identification.md, 04-risk-quantification.md, 05-false-negative-hunting.md, 06-validated-findings.md, and 08-threat-model-report.md. Phase 8 is a SUMMARY ONLY — see the Phase 8 section in the skill for the reduced format. Do NOT produce Phase 2 or Phase 7 diagrams — those are handled by the diagram-specialist. Reference component names from 02-structural-diagram.md to ensure consistency with the diagrams.
+> You are performing Phases 3-6 and 8 of a solo threat model assessment against the project at {project_root}. Output directory: {output_dir}/. FIRST: Read back 01-reconnaissance.md and 02-structural-diagram.md from {output_dir}/ to re-establish context — these were produced by prior agents in this pipeline. You have the threat-model skill loaded — execute Phases 3, 4, 5, 6, and 8 (summary only). Write 03-threat-identification.md, 04-risk-quantification.md, 05-false-negative-hunting.md, 06-validated-findings.md, and 08-threat-model-report.md. Phase 8 is a SUMMARY ONLY — see the Phase 8 section in the skill for the reduced format. Do NOT produce Phase 2 or Phase 7 diagrams — those are handled by the diagram-specialist. Reference component names from 02-structural-diagram.md to ensure consistency with the diagrams. EXECUTION LOG: At the end of 08-threat-model-report.md, include an ## Execution Log section per the agent output protocol — document process health, what went well, issues encountered, what was skipped, and assumptions made across all phases you executed.
 
 #### Diagram-specialist Phase 2 prompt
 
-> You are producing Phase 2 (Structural Diagram) of the threat model. Read your full instructions from ~/.claude/agents/diagram-specialist.md. Output directory: {output_dir}/. Read 01-reconnaissance.md and visual-completeness-checklist.md from {output_dir}/ to understand the system. Read ALL Mermaid reference files from ~/.claude/skills/threat-model/references/: mermaid-spec.md, mermaid-layers.md, mermaid-diagrams.md, mermaid-templates.md, mermaid-review-checklist.md, and mermaid-config.json. Follow the Phase 2 instructions in your agent definition. Write 02-structural-diagram.md to {output_dir}/. The project root is {project_root}.
+> You are producing Phase 2 (Structural Diagram) of the threat model. Read your full instructions from ~/.claude/agents/diagram-specialist.md. Output directory: {output_dir}/. Read 01-reconnaissance.md and visual-completeness-checklist.md from {output_dir}/ to understand the system. Read ALL Mermaid reference files from ~/.claude/skills/threat-model/references/: mermaid-spec.md, mermaid-layers.md, mermaid-diagrams.md, mermaid-templates.md, mermaid-review-checklist.md, and mermaid-config.json. Follow the Phase 2 instructions in your agent definition. Write 02-structural-diagram.md to {output_dir}/. The project root is {project_root}. EXECUTION LOG: At the end of 02-structural-diagram.md, include an ## Execution Log section — document process health, diagram complexity (node count, edge count, subgraph count), any Mermaid syntax issues encountered, visual completeness categories covered vs skipped, and self-assessed diagram quality.
 
 #### Diagram-specialist Phase 7 prompt
 
-> You are producing Phase 7 (Visual Validation / Risk Overlay) of the threat model. Read your full instructions from ~/.claude/agents/diagram-specialist.md. Output directory: {output_dir}/. Read these files from {output_dir}/: 02-structural-diagram.md, 04-risk-quantification.md, 05-false-negative-hunting.md, 06-validated-findings.md, and visual-completeness-checklist.md. Read ALL Mermaid reference files from ~/.claude/skills/threat-model/references/: mermaid-spec.md, mermaid-layers.md, mermaid-diagrams.md, mermaid-templates.md, mermaid-review-checklist.md, mermaid-config.json, and frameworks.md (for CWE ID verification in annotations). Follow the Phase 7 instructions in your agent definition. Write 07-final-diagram.md to {output_dir}/. Update visual-completeness-checklist.md with risk overlay completion status. The project root is {project_root}.
+> You are producing Phase 7 (Visual Validation / Risk Overlay) of the threat model. Read your full instructions from ~/.claude/agents/diagram-specialist.md. Output directory: {output_dir}/. Read these files from {output_dir}/: 02-structural-diagram.md, 04-risk-quantification.md, 05-false-negative-hunting.md, 06-validated-findings.md, and visual-completeness-checklist.md. Read ALL Mermaid reference files from ~/.claude/skills/threat-model/references/: mermaid-spec.md, mermaid-layers.md, mermaid-diagrams.md, mermaid-templates.md, mermaid-review-checklist.md, mermaid-config.json, and frameworks.md (for CWE ID verification in annotations). Follow the Phase 7 instructions in your agent definition. Write 07-final-diagram.md to {output_dir}/. Update visual-completeness-checklist.md with risk overlay completion status. The project root is {project_root}. EXECUTION LOG: At the end of 07-final-diagram.md, include an ## Execution Log section — document process health, risk annotations applied (count by severity), attack paths overlaid, any findings that could not be mapped to diagram components, and self-assessed overlay quality.
 
 #### Solo — report-analyst prompt
 
-> Generate the consolidated security assessment report from the threat model outputs. OUTPUT DIRECTORY: {output_dir}/. AVAILABLE INPUTS: 01-reconnaissance.md through 08-threat-model-report.md (note: 08 is a summary — the full report structure comes from the template). No team agents ran — this was a solo assessment. Skip Sections X and XI in the report structure and note in Assumptions that privacy and compliance assessments were not performed. FIRST: Read the report template at ~/.claude/skills/threat-model/references/report-template.md. Follow the template EXACTLY. You have Bash access. GENERATE ALL FOUR FORMATS using your docx, pdf, pptx, and frontend-design skills: 1. report.html 2. report.docx 3. report.pdf 4. executive-summary.pptx. CRITICAL: You MUST generate all four files yourself. When installing Python packages, ALWAYS use a venv: python3 -m venv /tmp/report-venv && source /tmp/report-venv/bin/activate && pip install python-docx python-pptx reportlab Pillow. Render Mermaid diagrams to PNG: npx -y @mermaid-js/mermaid-cli -i file.mmd -o file.png -c ~/.claude/skills/threat-model/references/mermaid-config.json -w 3000 --scale 2 -b white. The project root is {project_root}. BEFORE DECLARING DONE: Verify all files exist and are non-empty.
+> Generate the consolidated security assessment report from the threat model outputs. OUTPUT DIRECTORY: {output_dir}/. AVAILABLE INPUTS: 01-reconnaissance.md through 08-threat-model-report.md (note: 08 is a summary — the full report structure comes from the template). No team agents ran — this was a solo assessment. Skip Sections X and XI in the report structure and note in Assumptions that privacy and compliance assessments were not performed. FIRST: Read the report template at ~/.claude/skills/threat-model/references/report-template.md. Follow the template EXACTLY. You have Bash access. GENERATE ALL FOUR FORMATS using your docx, pdf, pptx, and frontend-design skills: 1. report.html 2. report.docx 3. report.pdf 4. executive-summary.pptx. CRITICAL: You MUST generate all four files yourself. When installing Python packages, ALWAYS use a venv: python3 -m venv /tmp/report-venv && source /tmp/report-venv/bin/activate && pip install python-docx python-pptx reportlab Pillow. Render Mermaid diagrams to PNG: npx -y @mermaid-js/mermaid-cli -i file.mmd -o file.png -c ~/.claude/skills/threat-model/references/mermaid-config.json -w 3000 --scale 2 -b white. The project root is {project_root}. HTML GENERATION RULES (MANDATORY): (1) Embed diagrams as pre-rendered PNG images using <img src="structural-diagram.png"> and <img src="risk-overlay-diagram.png"> — NEVER use Mermaid CDN (mermaid.js) for client-side rendering. (2) NEVER write <\/script> in HTML output — this JS-only escape breaks the HTML parser. Always write </script> literally. (3) Do not use defer/async on script tags that inline JS depends on. (4) All CSS and JS must be inline in the single HTML file (no external dependencies except the PNG images). BEFORE DECLARING DONE: Verify all files exist and are non-empty. For report.html, additionally verify: grep for '<img' to confirm PNG embeds exist, grep for 'mermaid' to confirm no CDN usage, grep for '<\\/script>' to confirm no broken escapes. GENERATION LOG (MANDATORY): After all files are generated, write {output_dir}/report-generation-log.md with: (1) a table of each deliverable (report.html, report.docx, report.pdf, executive-summary.pptx, structural-diagram.png, risk-overlay-diagram.png) with status (SUCCESS/FAILED), file size, and any errors encountered; (2) diagram rendering results (mermaid-cli exit codes, any warnings); (3) HTML validation check results (each grep check: PASS/FAIL with details); (4) corrections applied from validation-report.md (if team mode); (5) any issues encountered during generation and how they were handled; (6) overall self-assessed quality (HIGH/MEDIUM/LOW) with justification.
 
 #### Team — security-architect Phase 1 prompt
 
-> You are performing Phase 1 (Reconnaissance) of a team security assessment against the project at {project_root}. Write output to {output_dir}/. Create the output directory if it does not exist. You have the threat-model skill loaded — execute ONLY Phase 1. Write 01-reconnaissance.md and visual-completeness-checklist.md. Be thorough — specialist agents (privacy, compliance, code review) and the diagram-specialist will read your 01-reconnaissance.md to understand the system. Do NOT proceed to Phase 2 or any other phase. The parent conversation handles all orchestration.
+> You are performing Phase 1 (Reconnaissance) of a team security assessment against the project at {project_root}. Write output to {output_dir}/. Create the output directory if it does not exist. You have the threat-model skill loaded — execute ONLY Phase 1. Write 01-reconnaissance.md and visual-completeness-checklist.md. Be thorough — specialist agents (privacy, compliance, code review) and the diagram-specialist will read your 01-reconnaissance.md to understand the system. Do NOT proceed to Phase 2 or any other phase. The parent conversation handles all orchestration. EXECUTION LOG: At the end of 01-reconnaissance.md, include an ## Execution Log section per the agent output protocol at ~/.claude/skills/threat-model/references/agent-output-protocol.md — document process health, what went well, issues encountered, what was skipped, and assumptions made during this phase.
 
 #### Team — security-architect Phases 3-6,8 prompt
 
-> You are performing Phases 3-6 and 8 of a team security assessment against the project at {project_root}. Output directory: {output_dir}/. FIRST: Read back 01-reconnaissance.md and 02-structural-diagram.md from {output_dir}/ to re-establish context — these were produced by prior agents in this pipeline. You have the threat-model skill loaded — execute Phases 3, 4, 5, 6, and 8 (summary only). Write 03-threat-identification.md, 04-risk-quantification.md, 05-false-negative-hunting.md, 06-validated-findings.md, and 08-threat-model-report.md. Phase 8 is a SUMMARY ONLY — see the Phase 8 section in the skill for the reduced format. Do NOT produce Phase 2 or Phase 7 diagrams — those are handled by the diagram-specialist. Reference component names from 02-structural-diagram.md to ensure consistency with the diagrams. Be thorough — the parent conversation handles all orchestration.
+> You are performing Phases 3-6 and 8 of a team security assessment against the project at {project_root}. Output directory: {output_dir}/. FIRST: Read back 01-reconnaissance.md and 02-structural-diagram.md from {output_dir}/ to re-establish context — these were produced by prior agents in this pipeline. You have the threat-model skill loaded — execute Phases 3, 4, 5, 6, and 8 (summary only). Write 03-threat-identification.md, 04-risk-quantification.md, 05-false-negative-hunting.md, 06-validated-findings.md, and 08-threat-model-report.md. Phase 8 is a SUMMARY ONLY — see the Phase 8 section in the skill for the reduced format. Do NOT produce Phase 2 or Phase 7 diagrams — those are handled by the diagram-specialist. Reference component names from 02-structural-diagram.md to ensure consistency with the diagrams. Be thorough — the parent conversation handles all orchestration. EXECUTION LOG: At the end of 08-threat-model-report.md, include an ## Execution Log section per the agent output protocol — document process health, what went well, issues encountered, what was skipped, and assumptions made across all phases you executed.
 
 #### Team — privacy-agent prompt
 
-> Perform a full privacy impact assessment for the project at {project_root}. Read the reconnaissance at {output_dir}/01-reconnaissance.md to understand the system. Follow the agent output protocol at ~/.claude/skills/threat-model/references/agent-output-protocol.md. Write your output to {output_dir}/privacy-assessment.md. Include: data inventory, LINDDUN analysis, regulatory implications (GDPR, CCPA, HIPAA as applicable), privacy-specific recommendations.
+> Perform a full privacy impact assessment for the project at {project_root}. Read the reconnaissance at {output_dir}/01-reconnaissance.md to understand the system. Follow the agent output protocol at ~/.claude/skills/threat-model/references/agent-output-protocol.md — this includes the MANDATORY Execution Log section at the end of your output documenting process health, issues, skips, and assumptions. Write your output to {output_dir}/privacy-assessment.md. Include: data inventory, LINDDUN analysis, regulatory implications (GDPR, CCPA, HIPAA as applicable), privacy-specific recommendations.
 
 #### Team — grc-agent prompt
 
-> Perform compliance gap analysis for the project at {project_root}. Read the reconnaissance at {output_dir}/01-reconnaissance.md to understand the system. Follow the agent output protocol at ~/.claude/skills/threat-model/references/agent-output-protocol.md. Write your report to {output_dir}/compliance-gap-analysis.md. Include: framework coverage (SOC 2, PCI-DSS, HIPAA, ISO 27001, NIST CSF as applicable), control mapping, gap analysis, remediation roadmap.
+> Perform compliance gap analysis for the project at {project_root}. Read the reconnaissance at {output_dir}/01-reconnaissance.md to understand the system. Follow the agent output protocol at ~/.claude/skills/threat-model/references/agent-output-protocol.md — this includes the MANDATORY Execution Log section at the end of your output documenting process health, issues, skips, and assumptions. Write your report to {output_dir}/compliance-gap-analysis.md. Include: framework coverage (SOC 2, PCI-DSS, HIPAA, ISO 27001, NIST CSF as applicable), control mapping, gap analysis, remediation roadmap.
 
 #### Team — code-review-agent prompt
 
-> Perform a targeted code security review for the project at {project_root}. Read the reconnaissance at {output_dir}/01-reconnaissance.md to understand the system and identify high-risk components. Follow the agent output protocol at ~/.claude/skills/threat-model/references/agent-output-protocol.md. Focus on the top 3-5 highest-risk files/components identified in the reconnaissance. Write your findings to {output_dir}/code-security-review.md. Use CVSS v3.1 scoring. Include code evidence for every finding.
+> Perform a targeted code security review for the project at {project_root}. Read the reconnaissance at {output_dir}/01-reconnaissance.md to understand the system and identify high-risk components. Follow the agent output protocol at ~/.claude/skills/threat-model/references/agent-output-protocol.md — this includes the MANDATORY Execution Log section at the end of your output documenting process health, issues, skips, and assumptions. Focus on the top 3-5 highest-risk files/components identified in the reconnaissance. Write your findings to {output_dir}/code-security-review.md. Use CVSS v3.1 scoring. Include code evidence for every finding.
 
 #### Team — validation-specialist prompt
 
@@ -180,7 +261,7 @@ Substitute `{output_dir}` and `{project_root}` with actual paths in all prompts 
 
 #### Team — report-analyst prompt
 
-> Generate the consolidated security assessment report from ALL outputs. OUTPUT DIRECTORY: {output_dir}/. Read ALL .md files in {output_dir}/ as inputs (01-reconnaissance.md through 08-threat-model-report.md — note that 08 is a summary, the full report structure comes from the template — plus privacy-assessment.md, compliance-gap-analysis.md, code-security-review.md, validation-report.md, visual-completeness-checklist.md). FIRST: Read the report template at ~/.claude/skills/threat-model/references/report-template.md. Follow the template EXACTLY. You have Bash access. GENERATE ALL FOUR FORMATS using your docx, pdf, pptx, and frontend-design skills: 1. report.html 2. report.docx 3. report.pdf 4. executive-summary.pptx. CRITICAL: You MUST generate all four files yourself. When installing Python packages, ALWAYS use a venv: python3 -m venv /tmp/report-venv && source /tmp/report-venv/bin/activate && pip install python-docx python-pptx reportlab Pillow. Render Mermaid diagrams to PNG: npx -y @mermaid-js/mermaid-cli -i file.mmd -o file.png -c ~/.claude/skills/threat-model/references/mermaid-config.json -w 3000 --scale 2 -b white. Deduplicate findings across all sources. Apply corrections from validation-report.md. The project root is {project_root}. BEFORE DECLARING DONE: Verify all files exist and are non-empty.
+> Generate the consolidated security assessment report from ALL outputs. OUTPUT DIRECTORY: {output_dir}/. Read ALL .md files in {output_dir}/ as inputs (01-reconnaissance.md through 08-threat-model-report.md — note that 08 is a summary, the full report structure comes from the template — plus privacy-assessment.md, compliance-gap-analysis.md, code-security-review.md, validation-report.md, visual-completeness-checklist.md). FIRST: Read the report template at ~/.claude/skills/threat-model/references/report-template.md. Follow the template EXACTLY. You have Bash access. GENERATE ALL FOUR FORMATS using your docx, pdf, pptx, and frontend-design skills: 1. report.html 2. report.docx 3. report.pdf 4. executive-summary.pptx. CRITICAL: You MUST generate all four files yourself. When installing Python packages, ALWAYS use a venv: python3 -m venv /tmp/report-venv && source /tmp/report-venv/bin/activate && pip install python-docx python-pptx reportlab Pillow. Render Mermaid diagrams to PNG: npx -y @mermaid-js/mermaid-cli -i file.mmd -o file.png -c ~/.claude/skills/threat-model/references/mermaid-config.json -w 3000 --scale 2 -b white. Deduplicate findings across all sources. Apply corrections from validation-report.md. The project root is {project_root}. HTML GENERATION RULES (MANDATORY): (1) Embed diagrams as pre-rendered PNG images using <img src="structural-diagram.png"> and <img src="risk-overlay-diagram.png"> — NEVER use Mermaid CDN (mermaid.js) for client-side rendering. (2) NEVER write <\/script> in HTML output — this JS-only escape breaks the HTML parser. Always write </script> literally. (3) Do not use defer/async on script tags that inline JS depends on. (4) All CSS and JS must be inline in the single HTML file (no external dependencies except the PNG images). BEFORE DECLARING DONE: Verify all files exist and are non-empty. For report.html, additionally verify: grep for '<img' to confirm PNG embeds exist, grep for 'mermaid' to confirm no CDN usage, grep for '<\\/script>' to confirm no broken escapes. GENERATION LOG (MANDATORY): After all files are generated, write {output_dir}/report-generation-log.md with: (1) a table of each deliverable (report.html, report.docx, report.pdf, executive-summary.pptx, structural-diagram.png, risk-overlay-diagram.png) with status (SUCCESS/FAILED), file size, and any errors encountered; (2) diagram rendering results (mermaid-cli exit codes, any warnings); (3) HTML validation check results (each grep check: PASS/FAIL with details); (4) corrections applied from validation-report.md; (5) any issues encountered during generation and how they were handled; (6) overall self-assessed quality (HIGH/MEDIUM/LOW) with justification.
 
 ### Post-Assessment Verification
 
@@ -206,7 +287,94 @@ for f in privacy-assessment.md compliance-gap-analysis.md code-security-review.m
 done
 ```
 
+#### HTML Report Content Validation
+
+After verifying file existence, run these critical content checks on `report.html`:
+
+```bash
+# Check 1: Diagrams use embedded PNGs (not Mermaid CDN)
+grep -c '<img' "{output_dir}/report.html" | xargs -I{} echo "IMG tags found: {}"
+grep -qi 'mermaid' "{output_dir}/report.html" && echo "FAIL: Mermaid CDN reference found — must use PNG embeds" || echo "OK: No Mermaid CDN"
+
+# Check 2: No <\/script> escape (breaks HTML parser)
+grep -c '<\\/script>' "{output_dir}/report.html" | xargs -I{} test {} -eq 0 && echo "OK: No broken script escapes" || echo "FAIL: Found <\\/script> — replace with </script>"
+
+# Check 3: All script tags properly closed
+OPEN=$(grep -c '<script' "{output_dir}/report.html")
+CLOSE=$(grep -c '</script>' "{output_dir}/report.html")
+test "$OPEN" -eq "$CLOSE" && echo "OK: Script tags balanced ($OPEN/$CLOSE)" || echo "FAIL: Mismatched script tags (open=$OPEN, close=$CLOSE)"
+
+# Check 4: HTML structure is valid (has body content)
+grep -q '<body' "{output_dir}/report.html" && echo "OK: Body tag present" || echo "FAIL: No body tag"
+grep -q '</html>' "{output_dir}/report.html" && echo "OK: HTML properly closed" || echo "FAIL: HTML not closed"
+```
+
+If any HTML content checks fail, re-spawn the report-analyst with the specific failure details so it can fix the HTML output.
+
 If any report deliverables are missing, re-spawn the report-analyst to complete them. If any core threat model outputs are missing, investigate and report to the user.
+
+#### Execution Log Verification
+
+Check that every agent produced an execution log:
+
+```bash
+# Check for execution logs in agent outputs
+for f in 01-reconnaissance.md 02-structural-diagram.md 08-threat-model-report.md 07-final-diagram.md; do
+  grep -q '## Execution Log' "{output_dir}/$f" && echo "OK: $f has execution log" || echo "MISSING LOG: $f"
+done
+
+# Check specialist agent execution logs (team mode)
+for f in privacy-assessment.md compliance-gap-analysis.md code-security-review.md; do
+  test -f "{output_dir}/$f" && (grep -q '## Execution Log' "{output_dir}/$f" && echo "OK: $f has execution log" || echo "MISSING LOG: $f") || true
+done
+
+# Check report generation log
+test -s "{output_dir}/report-generation-log.md" && echo "OK: report-generation-log.md" || echo "MISSING: report-generation-log.md"
+```
+
+#### Pipeline Summary
+
+After all verification, write `{output_dir}/pipeline-summary.md` with a concise overview of the entire assessment:
+
+```markdown
+# Pipeline Summary
+
+## Assessment Metadata
+| Field | Value |
+|-------|-------|
+| Target System | {system name} |
+| Mode | Solo / Team |
+| Date | {date} |
+
+## Agent Execution Summary
+| Agent | Phase(s) | Output File(s) | Status | Execution Log Quality |
+|-------|----------|---------------|--------|------|
+| threat-modeler-recon | 1 | 01-reconnaissance.md | OK/FAILED | Has log: Y/N |
+| diagram-specialist | 2 | 02-structural-diagram.md | OK/FAILED | Has log: Y/N |
+| threat-modeler-analysis | 3-6,8 | 03-08.md | OK/FAILED | Has log: Y/N |
+| diagram-specialist-overlay | 7 | 07-final-diagram.md | OK/FAILED | Has log: Y/N |
+| privacy-specialist | — | privacy-assessment.md | OK/FAILED/SKIPPED | Has log: Y/N |
+| compliance-specialist | — | compliance-gap-analysis.md | OK/FAILED/SKIPPED | Has log: Y/N |
+| code-security-specialist | — | code-security-review.md | OK/FAILED/SKIPPED | Has log: Y/N |
+| validation-specialist | — | validation-report.md | OK/FAILED/SKIPPED | — |
+| report-generator | — | report.html, .docx, .pdf, .pptx | OK/FAILED | See report-generation-log.md |
+
+## Deliverable Verification
+| File | Exists | Size | Content Checks |
+|------|--------|------|----------------|
+| report.html | Y/N | N bytes | PNG embeds: P/F, No Mermaid: P/F, Scripts OK: P/F |
+| report.docx | Y/N | N bytes | — |
+| report.pdf | Y/N | N bytes | — |
+| executive-summary.pptx | Y/N | N bytes | — |
+
+## Issues Encountered
+[List any agents that failed, were re-spawned, or produced incomplete output]
+
+## Overall Assessment Health
+[HIGH / MEDIUM / LOW — based on agent execution logs and verification results]
+```
+
+This pipeline summary gives the user a single file to check for the overall health of the assessment, rather than having to dig through individual agent outputs.
 
 Inform the user of generated files:
 - `{output_dir}/report.html` — interactive web report (open in browser)

@@ -321,10 +321,10 @@ Omit this section entirely. Add note in Section XIII: "Privacy impact assessment
 
 ## Diagram Placement Rules
 
-1. **Section III**: Structural diagram — `structural-diagram.png` or live Mermaid
-2. **Section IV**: Risk overlay diagram — `risk-overlay-diagram.png` or live Mermaid
-3. Diagrams MUST be rendered as PNGs for Word/PDF/PPTX formats (see Step 2.5 in report-analyst instructions)
-4. Diagrams render live via mermaid.js CDN for HTML format
+1. **Section III**: Structural diagram — embed `structural-diagram.png` via `<img>` tag
+2. **Section IV**: Risk overlay diagram — embed `risk-overlay-diagram.png` via `<img>` tag
+3. Diagrams MUST be rendered as PNGs and embedded in ALL formats (HTML, Word, PDF, PPTX)
+4. **NEVER use Mermaid CDN (`mermaid.js`) for client-side rendering in HTML reports.** CDN scripts cause race conditions, fail on `file://` URLs, and `<\/script>` escapes break the HTML parser. Always use pre-rendered PNG images with `<img src="filename.png">`.
 5. Both diagrams must use consistent Mermaid direction (TD or LR) — do not mix
 
 ## Table Consistency Rules

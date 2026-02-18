@@ -159,6 +159,39 @@ Agent outputs MUST follow this naming:
 | grc-agent | `compliance-gap-analysis.md` |
 | validation-specialist | `validation-report.md` |
 
+## Execution Log (Required)
+
+Every agent MUST include an `## Execution Log` section at the end of its output file. This is a structured process log — not findings, but a record of what happened during the agent's execution. This enables post-assessment debugging and continuous improvement.
+
+```markdown
+## Execution Log
+
+### Process Health
+| Metric | Value |
+|--------|-------|
+| Files Read | N |
+| Files Written | N |
+| Errors Encountered | N |
+| Items Skipped | N |
+| Self-Assessed Output Quality | HIGH / MEDIUM / LOW |
+
+### What Went Well
+- [Bullet list of things that worked smoothly — e.g., "Reconnaissance file was comprehensive, all components clearly documented"]
+
+### Issues Encountered
+- [Bullet list of problems hit during execution — e.g., "Could not read file X — assumed Y instead", "Hit context limit, had to summarize Phase 3 threats"]
+- For each issue: what happened, how it was handled, and what impact it may have on output quality
+
+### What Was Skipped or Incomplete
+- [Bullet list of anything the agent could not complete — e.g., "API depth analysis skipped — no API schema found", "Only reviewed 3 of 5 high-risk files due to context constraints"]
+- For each skip: why it was skipped and the potential impact on assessment completeness
+
+### Assumptions Made
+- [Bullet list of assumptions made due to missing information — distinct from the Assumptions & Limitations section which covers scope. This covers process-level assumptions like "Assumed default PostgreSQL port 5432 since not specified in Terraform"]
+```
+
+**Why this matters:** Without execution logs, the only way to discover that an agent struggled is to read its findings and notice gaps. The HTML rendering failure (report-analyst declaring success on a broken file) happened because there was no log of what the agent actually tried, what succeeded, and what failed.
+
 ## Validation Rules
 
 The validation-specialist checks every agent output against these rules:
@@ -171,6 +204,7 @@ The validation-specialist checks every agent output against these rules:
 6. **Component references**: All affected components match nodes in the Phase 2 diagram
 7. **Completeness**: Summary counts match actual finding counts
 8. **No placeholders**: No TODO, TBD, [INSERT], or {placeholder} text
+9. **Execution log present**: Every agent output includes an Execution Log section with process health, issues, and skipped items
 
 ## Example Output Snippet
 

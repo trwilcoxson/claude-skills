@@ -56,24 +56,16 @@ Strip before CLI rendering:
 3. Unescaped special characters → wrap in double quotes
 4. Deeply nested subgraphs (3+ levels) → flatten where possible
 
-### HTML Rendering (mermaid.js CDN)
+### HTML Report Rendering
 
-```javascript
-mermaid.initialize({
-  startOnLoad: true,
-  theme: 'base',
-  themeVariables: {
-    primaryColor: '#f5f5f5',
-    primaryTextColor: '#1a1a2e',
-    lineColor: '#4a4a6a',
-    fontSize: '15px',
-    fontFamily: "'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
-    edgeLabelBackground: '#ffffffee'
-  },
-  flowchart: { useMaxWidth: false, curve: 'basis', padding: 24 },
-  securityLevel: 'loose'
-});
-```
+**DO NOT use Mermaid CDN (`mermaid.js`) for client-side rendering in HTML reports.** Always pre-render diagrams to PNG using the CLI command in §2 and embed them with `<img src="filename.png">`.
+
+CDN rendering fails in practice because:
+1. `<\/script>` (a JS-only escape) breaks the HTML parser — it never finds the closing `</script>` tag, consuming the entire page as script text.
+2. `defer`/`async` on the CDN script creates race conditions with inline JS that calls `mermaid.initialize()`.
+3. `file://` URLs block CDN fetches entirely, so reports opened locally show nothing.
+
+The CLI rendering command in §2 above is the only supported method for producing diagram images.
 
 ---
 
