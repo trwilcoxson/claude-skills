@@ -1,5 +1,15 @@
 # Analysis Checklists
 
+## Contents
+- Phase 1 — Reconnaissance Checklist
+- Phase 2 — Structural Diagram Checklist
+- Phase 3 — Threat Identification Checklist
+- Phase 4 — Risk Quantification Checklist
+- Phase 5 — False Negative Hunting Checklist
+- Phase 6 — False Positive Validation Checklist
+- Phase 7 — Visual Validation Checklist
+- Phase 8 — Final Report Checklist
+
 Use these checklists to ensure thoroughness at each phase. Check off items as you complete them. For large systems, save each phase's output to its own file as noted.
 
 ## Phase 1 — Reconnaissance Checklist
@@ -24,18 +34,38 @@ Use these checklists to ensure thoroughness at each phase. Check off items as yo
 
 ## Phase 2 — Structural Diagram Checklist
 
+### Layer Strategy
+- [ ] Layer strategy determined per mermaid-layers.md §6 (≤5 → 2-layer, 6-20 → 4-layer, >20 → 4-layer + sub-diagrams)
+- [ ] L1 (Architecture) produced with neutral styling only
+- [ ] L2 (Trust & Identity) produced with boundary subgraphs and AUTH/ADMIN edges (if 4-layer)
+- [ ] L3 (Data) produced with classification zones and KEY edges (if 4-layer)
+
+### Structural Content
 - [ ] Every component from Phase 1 inventory appears in the diagram
 - [ ] All components use neutral styling (:::neutral), NOT risk-based colors
 - [ ] External entities use :::external styling
 - [ ] Data stores use :::dataStore styling
-- [ ] Every data flow is labeled with protocol, data type, and sensitivity
-- [ ] Trust boundaries are drawn as dashed subgraphs
-- [ ] Component metadata notes present for significant components (tech, auth, encryption)
+- [ ] Symbol taxonomy followed from mermaid-spec.md §3 (correct shapes per type)
+
+### Typed Edges
+- [ ] Every edge has a typed label — no bare `-->` without label text
+- [ ] Edge prefixes match the 8-type spec: (none), [CTRL], [AUTH], [KEY], [ADMIN], [ASYNC], [REPL], [BUILD]
+- [ ] Edge labels include protocol, data type, and sensitivity classification
+- [ ] linkStyle colors applied for typed edges (AUTH=blue, ADMIN=red, ASYNC=green, REPL=purple, BUILD=orange)
+
+### Ownership & Metadata
+- [ ] Ownership markers present on nodes: [team:X], [managed], [self-managed], [vendor:X]
+- [ ] Component metadata in enriched node labels (Name + Tech + Security Features)
+- [ ] Version stamp comment present: `%% Version: {date} | Phase: 2 | System: {name}`
+
+### Quality
 - [ ] NO threat annotation notes present (analysis has not happened yet)
 - [ ] Structural legend included (no risk colors in legend)
 - [ ] Mermaid syntax is valid (classDef at end, proper quoting, correct shapes)
 - [ ] No orphaned nodes (every node has at least one connection)
 - [ ] Layout direction is appropriate (TD for hierarchical, LR for pipeline)
+- [ ] Density within limits (≤15 nodes per subgraph, ≤25 total)
+- [ ] Validated against mermaid-review-checklist.md
 - [ ] Output saved to file (02-structural-diagram.md) for large systems
 
 ## Phase 3 — Threat Identification Checklist
@@ -51,6 +81,11 @@ Identify threats ONLY in this phase. Do NOT assign likelihood, impact, or severi
 
 ### Design-Level and Domain Assessment
 - [ ] Design-level and domain-specific assessment complete (secure design principles, zero trust, business logic, cloud-native, API depth as applicable)
+
+### Auth Sequence Diagram
+- [ ] Auth sequence diagram produced if system has AuthN/AuthZ (mermaid-diagrams.md §3)
+- [ ] Participant IDs match node IDs from Phase 2 DFD
+- [ ] Both success and failure paths shown
 
 ### Output Format
 - [ ] Each threat has unique ID (TM-001, TM-002, ...)
@@ -85,6 +120,7 @@ Score each threat identified in Phase 3.
 - [ ] Trust boundary bypass paths, data aggregation, side-channel, and cascade failure risks assessed
 - [ ] AI/ML-specific threats reviewed in depth (if applicable)
 - [ ] Newly discovered threats assigned IDs and scored using Phase 4 methodology
+- [ ] Attack tree diagrams produced for kill chains with ≥3 steps (mermaid-diagrams.md §2)
 - [ ] Output saved to file (05-false-negative-hunting.md) for large systems
 
 ## Phase 6 — False Positive Validation Checklist
@@ -111,14 +147,18 @@ Score each threat identified in Phase 3.
 
 ## Phase 7 — Visual Validation Checklist
 
-### Risk Overlay Application
-- [ ] Started from Phase 2 structural diagram
+### L4 Threat Overlay Production
+- [ ] Started from L1 structural diagram as base
 - [ ] Components with CRITICAL/HIGH findings colored :::highRisk
 - [ ] Components with MEDIUM findings colored :::medRisk
 - [ ] Components with only LOW findings colored :::lowRisk
 - [ ] Components with NO validated findings kept as :::noFindings (not :::lowRisk)
-- [ ] Threat annotation notes added with STRIDE-LM categories and Risk scores
-- [ ] Critical data flows highlighted with ==> thick arrows
+- [ ] Enriched node labels with machine-parseable annotations: `Name\nTech\n⚠ STRIDE · LxI=Score BAND\nCWE IDs`
+- [ ] STRIDE abbreviations use single letters (S,T,R,I,D,E,LM)
+- [ ] LxI calculation correct, BAND matches score (CRITICAL 20-25, HIGH 12-19, MEDIUM 6-11, LOW 1-5)
+- [ ] CWE IDs verified against frameworks.md
+- [ ] Attack path overlays using ==> thick arrows with red linkStyle (L4 only)
+- [ ] Attack path overlays appear ONLY in L4 (not in L1-L3)
 
 ### Completeness
 - [ ] Every component from Phase 1 inventory present
@@ -141,8 +181,14 @@ Score each threat identified in Phase 3.
 - [ ] Labels readable and concise
 - [ ] Risk-overlay legend present and accurate (includes noFindings explanation)
 
+### Review Checklist
+- [ ] L4 diagram validated against mermaid-review-checklist.md (all 8 sections)
+- [ ] Version stamp present
+- [ ] Visual completeness checklist updated with risk overlay completion status
+
 ### Output
-- [ ] Final Mermaid diagram produced in fenced code block
+- [ ] L4 Mermaid diagram produced in fenced code block
+- [ ] Saved as {name}-L4-threat.mmd
 - [ ] Output saved to file (07-final-diagram.md) for large systems
 
 ## Phase 8 — Final Report Checklist

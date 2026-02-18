@@ -1,5 +1,21 @@
 # Threat Modeling Frameworks Reference
 
+## Contents
+- Threat Actor Profiles (selection criteria, capability scoring)
+- STRIDE-LM (7 categories: S, T, R, I, D, E, LM)
+- AI/ML Security Threats (LLM, Agentic AI, RAG, Multi-Modal)
+- OWASP Risk Rating Methodology (Likelihood 1-5, Impact 1-5, Risk Matrix, Severity Bands)
+- LINDDUN Privacy Threats (7 categories)
+- MITRE ATT&CK — Key Tactics and Techniques (13 tactics, technique IDs)
+- OWASP Top 10 (2021) and API Security Top 10 (2023)
+- Cloud-Native Threat Patterns (IAM, Metadata, Cross-Tenant, Serverless, Storage, Container)
+- Zero Trust Assessment Criteria
+- API Security Depth (GraphQL, WebSocket, gRPC, Gateway Bypass)
+- CWE Groups by Architectural Concern (Auth, Authz, Input, Crypto, Data, Error, Resource)
+- CIA Impact Matrix
+- PASTA — Process for Attack Simulation and Threat Analysis (7 stages)
+- Framework ID Verification Rules
+
 ## Threat Actor Profiles
 
 Reference profiles for common threat actors. Phase 1 selects relevant actors based on system characteristics.

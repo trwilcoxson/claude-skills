@@ -1,20 +1,30 @@
 # Claude Code Skills
 
-Custom slash commands (skills) for [Claude Code](https://docs.anthropic.com/en/docs/claude-code).
-
-## Why Deterministic Tools + LLM
-
-LLMs cannot reliably lint code. They approximate pattern matching across thousands of lines, miss real bugs, hallucinate nonexistent ones, and produce different results on every run. They cannot execute tests, compute branch coverage, trace types through import chains, or check a live CVE database for vulnerable dependencies.
-
-Static analysis tools can. `ruff check` produces the same verified output every time. `mypy` builds a full type graph and proves correctness. `pytest` actually runs the code. `pip-audit` queries real vulnerability databases.
-
-LLMs are good at prioritizing a wall of 500 warnings, explaining why a finding matters, suggesting concrete fixes, and catching architectural problems no linter can detect — bad abstractions, SRP violations, unclear naming, wrong design patterns.
-
-These skills run deterministic tools first, then hand the results to the LLM for prioritization and reasoning. You get full static analysis coverage plus architectural judgment.
+Custom skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) that provide specialized workflows, domain expertise, and tool integrations.
 
 ## Available Skills
 
+### `threat-model` — Architectural Threat Modeling
+
+Produces architectural threat models with Mermaid data flow diagrams, STRIDE-LM threat identification, PASTA attack simulation, and OWASP Risk Rating prioritization. Orchestrates a pipeline of [specialist agents](https://github.com/trwilcoxson/claude-agents) for comprehensive security assessments.
+
+**Features:**
+- 8-phase structured methodology (reconnaissance through final report)
+- Solo mode (threat model + report) or Team mode (adds privacy, compliance, code review agents)
+- Mermaid DFDs with 4-layer structural + risk overlay approach
+- Four output formats: HTML (interactive), Word (.docx), PDF, and Executive PPTX
+- Cross-agent validation and deduplication
+
+**Usage:**
+```
+Run a threat model on [target]
+```
+
+**Dependencies:** Requires [claude-agents](https://github.com/trwilcoxson/claude-agents) for the specialist agent definitions. See the [architecture doc](https://github.com/trwilcoxson/claude-agents/blob/main/docs/ARCHITECTURE.md) for the full system design.
+
 ### `/python-quality` — Python Code Quality Pipeline
+
+> **Design philosophy:** LLMs approximate pattern matching and produce different results each run. Static analysis tools (`ruff`, `mypy`, `pytest`, `pip-audit`) produce verified, deterministic output. This skill runs deterministic tools first, then hands the results to the LLM for prioritization and reasoning.
 
 Runs comprehensive Python code quality checks in a single invocation. Orchestrates lint, format, type check, test, security scan, dependency audit, and dead code detection with smart tool deduplication.
 
@@ -38,43 +48,29 @@ Runs comprehensive Python code quality checks in a single invocation. Orchestrat
 /python-quality src/ --fix   # Both
 ```
 
-### `/threat-model` — Architectural Threat Modeling
-
-Produces an architectural threat model with Mermaid data flow diagrams, STRIDE-LM threat identification, PASTA attack simulation, and OWASP Risk Rating prioritization.
-
-**Features:**
-- 8-phase structured analysis (reconnaissance through final report)
-- Two-pass Mermaid diagrams: structural DFD + risk overlay
-- STRIDE-LM coverage across all components (Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege, Lateral Movement)
-- PASTA likelihood/impact scoring mapped to OWASP Risk Rating severity bands
-- MITRE ATT&CK and CWE cross-referencing
-- Remediation roadmap with wave-based prioritization
-- Designed for use by the [security-architect agent](https://github.com/trwilcoxson/claude-agents)
-
-**Included files:**
-- `SKILL.md` — Main skill definition with 8-phase methodology
-- `references/frameworks.md` — MITRE ATT&CK, CWE, OWASP reference tables
-- `references/mermaid-conventions.md` — Mermaid diagram syntax and styling standards
-- `references/analysis-checklists.md` — Phase-specific validation checklists
-- `report-template.md` — Deterministic report template enforcing consistent section ordering, table structures, and cross-reference integrity across all runs
-
-**Usage:**
-```
-/threat-model                # Run against current project
-```
-
 ## Installation
 
-Copy any skill's directory to your Claude Code skills directory:
+### threat-model
+
+The threat-model skill is installed as a Claude Code skill (not a slash command). Copy the skill directory:
+
+```bash
+# Global
+cp -r skills/threat-model ~/.claude/skills/threat-model
+```
+
+You also need the [specialist agents](https://github.com/trwilcoxson/claude-agents) installed. See that repo's README for agent installation.
+
+### python-quality
+
+Copy the skill directory:
 
 ```bash
 # Global (available in all projects)
 cp -r skills/python-quality ~/.claude/skills/python-quality
-cp -r skills/threat-model ~/.claude/skills/threat-model
 
 # Project-specific
 cp -r skills/python-quality .claude/skills/python-quality
-cp -r skills/threat-model .claude/skills/threat-model
 ```
 
 Then restart Claude Code or start a new session. The skill will appear in autocomplete when you type `/`.
@@ -83,16 +79,16 @@ Then restart Claude Code or start a new session. The skill will appear in autoco
 
 ```
 skills/
-  python-quality/
-    python-quality.md                      # The skill file
   threat-model/
-    SKILL.md                               # Main skill definition (8-phase methodology)
-    report-template.md                     # Deterministic report template
-    references/
-      frameworks.md                        # MITRE ATT&CK, CWE, OWASP tables
-      mermaid-conventions.md               # Diagram syntax standards
-      analysis-checklists.md               # Phase validation checklists
+    SKILL.md              # Orchestration guide + 8-phase methodology
+    references/           # 11 reference files (frameworks, mermaid, templates)
+  python-quality/
+    python-quality.md     # The skill file
 ```
+
+## Related
+
+- **[claude-agents](https://github.com/trwilcoxson/claude-agents)** — Specialist agent definitions for the threat-model pipeline (security-architect, report-analyst, code-review-agent, privacy-agent, grc-agent, validation-specialist). Includes the [architecture design document](https://github.com/trwilcoxson/claude-agents/blob/main/docs/ARCHITECTURE.md).
 
 ## License
 
