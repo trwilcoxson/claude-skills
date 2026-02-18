@@ -7,7 +7,7 @@ description: Produces an architectural threat model with Mermaid data flow diagr
 
 You are performing an architectural threat model. This skill complements the `security-reviewer` agent (which operates at code level) by operating at the **architecture and design level**. After completing the threat model, suggest the user run `security-reviewer` against high-risk components identified in this analysis.
 
-Follow all eight phases sequentially. Consult the reference files in `references/` throughout. Save intermediate outputs to files when analyzing systems with more than 10 components or when context length is a concern. Always offer to save to files.
+The eight phases are split across specialized agents to reduce context rot: the security-architect handles Phases 1, 3-6, and 8 (analysis); the diagram-specialist handles Phases 2 and 7 (Mermaid diagrams). Each agent gets a fresh context window. Consult the reference files in `references/` throughout. Save intermediate outputs to files when analyzing systems with more than 10 components or when context length is a concern. Always offer to save to files.
 
 Define `{output_dir}` as `{project_root}/threat-model-output/` unless the user specifies a different location. Create the directory if it does not exist.
 
@@ -54,12 +54,32 @@ The decision depends on the SYSTEM, not the user's wording. "Threat model X" doe
 ### Solo Workflow
 
 1. **Create output directory**: `mkdir -p {project_root}/threat-model-output`
-2. **Spawn `security-architect`** (blocking):
+
+2. **Spawn `security-architect`** (blocking) — Phase 1 only:
    - `subagent_type`: `"security-architect"`
-   - `name`: `"threat-modeler"`
-   - `prompt`: See [Solo — security-architect prompt](#solo--security-architect-prompt) below
-   - The agent executes all 8 phases and writes `01-reconnaissance.md` through `08-threat-model-report.md`
-3. **Spawn `report-analyst`** (blocking):
+   - `name`: `"threat-modeler-recon"`
+   - `prompt`: See [Solo — security-architect Phase 1 prompt](#solo--security-architect-phase-1-prompt) below
+   - Writes `01-reconnaissance.md` and `visual-completeness-checklist.md`.
+
+3. **Spawn `security-architect`** (blocking) — Phase 2 (structural diagrams):
+   - `subagent_type`: `"security-architect"`
+   - `name`: `"diagram-specialist"`
+   - `prompt`: See [diagram-specialist Phase 2 prompt](#diagram-specialist-phase-2-prompt) below
+   - Reads `01-reconnaissance.md`, writes `02-structural-diagram.md`.
+
+4. **Spawn `security-architect`** (blocking) — Phases 3-6, 8:
+   - `subagent_type`: `"security-architect"`
+   - `name`: `"threat-modeler-analysis"`
+   - `prompt`: See [Solo — security-architect Phases 3-6,8 prompt](#solo--security-architect-phases-3-68-prompt) below
+   - Reads prior phases from files, writes `03-threat-identification.md` through `06-validated-findings.md` and `08-threat-model-report.md` (summary only).
+
+5. **Spawn `security-architect`** (blocking) — Phase 7 (risk overlay diagram):
+   - `subagent_type`: `"security-architect"`
+   - `name`: `"diagram-specialist-overlay"`
+   - `prompt`: See [diagram-specialist Phase 7 prompt](#diagram-specialist-phase-7-prompt) below
+   - Reads `02-structural-diagram.md`, `04-06.md`, writes `07-final-diagram.md`.
+
+6. **Spawn `report-analyst`** (blocking):
    - `subagent_type`: `"report-analyst"`
    - `name`: `"report-generator"`
    - `prompt`: See [Solo — report-analyst prompt](#solo--report-analyst-prompt) below
@@ -68,26 +88,44 @@ The decision depends on the SYSTEM, not the user's wording. "Threat model X" doe
 
 1. **Create output directory**: `mkdir -p {project_root}/threat-model-output`
 
-2. **Spawn `security-architect`** (blocking) — all 8 phases:
+2. **Spawn `security-architect`** (blocking) — Phase 1 only:
    - `subagent_type`: `"security-architect"`
-   - `name`: `"threat-modeler"`
-   - `prompt`: See [Team — security-architect prompt](#team--security-architect-prompt) below
-   - Wait for completion. The agent writes `01-reconnaissance.md` through `08-threat-model-report.md`.
+   - `name`: `"threat-modeler-recon"`
+   - `prompt`: See [Team — security-architect Phase 1 prompt](#team--security-architect-phase-1-prompt) below
+   - Writes `01-reconnaissance.md` and `visual-completeness-checklist.md`.
 
-3. **Spawn 3 specialists in parallel** (`run_in_background: true` on all 3):
+3. **Spawn `security-architect`** (blocking) — Phase 2 (structural diagrams):
+   - `subagent_type`: `"security-architect"`
+   - `name`: `"diagram-specialist"`
+   - `prompt`: See [diagram-specialist Phase 2 prompt](#diagram-specialist-phase-2-prompt) below
+   - Reads `01-reconnaissance.md`, writes `02-structural-diagram.md`.
+
+4. **Spawn `security-architect`** (blocking) — Phases 3-6, 8:
+   - `subagent_type`: `"security-architect"`
+   - `name`: `"threat-modeler-analysis"`
+   - `prompt`: See [Team — security-architect Phases 3-6,8 prompt](#team--security-architect-phases-3-68-prompt) below
+   - Reads prior phases from files, writes `03-threat-identification.md` through `06-validated-findings.md` and `08-threat-model-report.md` (summary only).
+
+5. **Spawn `security-architect`** (blocking) — Phase 7 (risk overlay diagram):
+   - `subagent_type`: `"security-architect"`
+   - `name`: `"diagram-specialist-overlay"`
+   - `prompt`: See [diagram-specialist Phase 7 prompt](#diagram-specialist-phase-7-prompt) below
+   - Reads `02-structural-diagram.md`, `04-06.md`, writes `07-final-diagram.md`.
+
+6. **Spawn 3 specialists in parallel** (`run_in_background: true` on all 3):
    - **privacy-agent**: `subagent_type`: `"privacy-agent"`, `name`: `"privacy-specialist"` — see [privacy-agent prompt](#team--privacy-agent-prompt)
    - **grc-agent**: `subagent_type`: `"grc-agent"`, `name`: `"compliance-specialist"` — see [grc-agent prompt](#team--grc-agent-prompt)
    - **code-review-agent**: `subagent_type`: `"code-review-agent"`, `name`: `"code-security-specialist"` — see [code-review-agent prompt](#team--code-review-agent-prompt)
 
-4. **Wait for all 3**: Call `TaskOutput(task_id=..., block=true)` for each background agent's task ID.
+7. **Wait for all 3**: Call `TaskOutput(task_id=..., block=true)` for each background agent's task ID.
 
-5. **Spawn `general-purpose`** (blocking) as validation-specialist:
+8. **Spawn `general-purpose`** (blocking) as validation-specialist:
    - `subagent_type`: `"general-purpose"`
    - `name`: `"validation-specialist"`
    - `prompt`: See [validation-specialist prompt](#team--validation-specialist-prompt)
    - Reads all outputs, writes `validation-report.md`.
 
-6. **Spawn `report-analyst`** (blocking):
+9. **Spawn `report-analyst`** (blocking):
    - `subagent_type`: `"report-analyst"`
    - `name`: `"report-generator"`
    - `prompt`: See [Team — report-analyst prompt](#team--report-analyst-prompt)
@@ -96,17 +134,33 @@ The decision depends on the SYSTEM, not the user's wording. "Threat model X" doe
 
 Substitute `{output_dir}` and `{project_root}` with actual paths in all prompts below.
 
-#### Solo — security-architect prompt
+#### Solo — security-architect Phase 1 prompt
 
-> You are performing a solo threat model assessment. Execute all 8 phases of the threat-model skill against the project at {project_root}. Write all outputs to {output_dir}/. Create the output directory if it does not exist. You have the threat-model skill loaded — follow it phase by phase, writing 01-reconnaissance.md through 08-threat-model-report.md. Be thorough and methodical.
+> You are performing Phase 1 (Reconnaissance) of a solo threat model assessment against the project at {project_root}. Write output to {output_dir}/. Create the output directory if it does not exist. You have the threat-model skill loaded — execute ONLY Phase 1. Write 01-reconnaissance.md and visual-completeness-checklist.md. Be thorough — this reconnaissance is the foundation for all subsequent phases. Do NOT proceed to Phase 2 or any other phase.
+
+#### Solo — security-architect Phases 3-6,8 prompt
+
+> You are performing Phases 3-6 and 8 of a solo threat model assessment against the project at {project_root}. Output directory: {output_dir}/. FIRST: Read back 01-reconnaissance.md and 02-structural-diagram.md from {output_dir}/ to re-establish context — these were produced by prior agents in this pipeline. You have the threat-model skill loaded — execute Phases 3, 4, 5, 6, and 8 (summary only). Write 03-threat-identification.md, 04-risk-quantification.md, 05-false-negative-hunting.md, 06-validated-findings.md, and 08-threat-model-report.md. Phase 8 is a SUMMARY ONLY — see the Phase 8 section in the skill for the reduced format. Do NOT produce Phase 2 or Phase 7 diagrams — those are handled by the diagram-specialist. Reference component names from 02-structural-diagram.md to ensure consistency with the diagrams.
+
+#### Diagram-specialist Phase 2 prompt
+
+> You are producing Phase 2 (Structural Diagram) of the threat model. Read your full instructions from ~/.claude/agents/diagram-specialist.md. Output directory: {output_dir}/. Read 01-reconnaissance.md and visual-completeness-checklist.md from {output_dir}/ to understand the system. Read ALL Mermaid reference files from ~/.claude/skills/threat-model/references/: mermaid-spec.md, mermaid-layers.md, mermaid-diagrams.md, mermaid-templates.md, mermaid-review-checklist.md, and mermaid-config.json. Follow the Phase 2 instructions in your agent definition. Write 02-structural-diagram.md to {output_dir}/. The project root is {project_root}.
+
+#### Diagram-specialist Phase 7 prompt
+
+> You are producing Phase 7 (Visual Validation / Risk Overlay) of the threat model. Read your full instructions from ~/.claude/agents/diagram-specialist.md. Output directory: {output_dir}/. Read these files from {output_dir}/: 02-structural-diagram.md, 04-risk-quantification.md, 05-false-negative-hunting.md, 06-validated-findings.md, and visual-completeness-checklist.md. Read ALL Mermaid reference files from ~/.claude/skills/threat-model/references/: mermaid-spec.md, mermaid-layers.md, mermaid-diagrams.md, mermaid-templates.md, mermaid-review-checklist.md, mermaid-config.json, and frameworks.md (for CWE ID verification in annotations). Follow the Phase 7 instructions in your agent definition. Write 07-final-diagram.md to {output_dir}/. Update visual-completeness-checklist.md with risk overlay completion status. The project root is {project_root}.
 
 #### Solo — report-analyst prompt
 
-> Generate the consolidated security assessment report from the threat model outputs. OUTPUT DIRECTORY: {output_dir}/. AVAILABLE INPUTS: 01-reconnaissance.md through 08-threat-model-report.md. No team agents ran — this was a solo assessment. Skip Sections X and XI in the report structure and note in Assumptions that privacy and compliance assessments were not performed. FIRST: Read the report template at ~/.claude/skills/threat-model/references/report-template.md. Follow the template EXACTLY. You have Bash access. GENERATE ALL FOUR FORMATS using your docx, pdf, pptx, and frontend-design skills: 1. report.html 2. report.docx 3. report.pdf 4. executive-summary.pptx. CRITICAL: You MUST generate all four files yourself. When installing Python packages, ALWAYS use a venv: python3 -m venv /tmp/report-venv && source /tmp/report-venv/bin/activate && pip install python-docx python-pptx reportlab Pillow. Render Mermaid diagrams to PNG: npx -y @mermaid-js/mermaid-cli -i file.mmd -o file.png -c ~/.claude/skills/threat-model/references/mermaid-config.json -w 3000 --scale 2 -b white. The project root is {project_root}. BEFORE DECLARING DONE: Verify all files exist and are non-empty.
+> Generate the consolidated security assessment report from the threat model outputs. OUTPUT DIRECTORY: {output_dir}/. AVAILABLE INPUTS: 01-reconnaissance.md through 08-threat-model-report.md (note: 08 is a summary — the full report structure comes from the template). No team agents ran — this was a solo assessment. Skip Sections X and XI in the report structure and note in Assumptions that privacy and compliance assessments were not performed. FIRST: Read the report template at ~/.claude/skills/threat-model/references/report-template.md. Follow the template EXACTLY. You have Bash access. GENERATE ALL FOUR FORMATS using your docx, pdf, pptx, and frontend-design skills: 1. report.html 2. report.docx 3. report.pdf 4. executive-summary.pptx. CRITICAL: You MUST generate all four files yourself. When installing Python packages, ALWAYS use a venv: python3 -m venv /tmp/report-venv && source /tmp/report-venv/bin/activate && pip install python-docx python-pptx reportlab Pillow. Render Mermaid diagrams to PNG: npx -y @mermaid-js/mermaid-cli -i file.mmd -o file.png -c ~/.claude/skills/threat-model/references/mermaid-config.json -w 3000 --scale 2 -b white. The project root is {project_root}. BEFORE DECLARING DONE: Verify all files exist and are non-empty.
 
-#### Team — security-architect prompt
+#### Team — security-architect Phase 1 prompt
 
-> You are performing the threat modeling portion of a team security assessment. Execute all 8 phases of the threat-model skill against the project at {project_root}. Write all outputs to {output_dir}/. Create the output directory if it does not exist. You have the threat-model skill loaded — follow it phase by phase, writing 01-reconnaissance.md through 08-threat-model-report.md. Be thorough — specialist agents (privacy, compliance, code review) will read your 01-reconnaissance.md to understand the system. The parent conversation handles all orchestration.
+> You are performing Phase 1 (Reconnaissance) of a team security assessment against the project at {project_root}. Write output to {output_dir}/. Create the output directory if it does not exist. You have the threat-model skill loaded — execute ONLY Phase 1. Write 01-reconnaissance.md and visual-completeness-checklist.md. Be thorough — specialist agents (privacy, compliance, code review) and the diagram-specialist will read your 01-reconnaissance.md to understand the system. Do NOT proceed to Phase 2 or any other phase. The parent conversation handles all orchestration.
+
+#### Team — security-architect Phases 3-6,8 prompt
+
+> You are performing Phases 3-6 and 8 of a team security assessment against the project at {project_root}. Output directory: {output_dir}/. FIRST: Read back 01-reconnaissance.md and 02-structural-diagram.md from {output_dir}/ to re-establish context — these were produced by prior agents in this pipeline. You have the threat-model skill loaded — execute Phases 3, 4, 5, 6, and 8 (summary only). Write 03-threat-identification.md, 04-risk-quantification.md, 05-false-negative-hunting.md, 06-validated-findings.md, and 08-threat-model-report.md. Phase 8 is a SUMMARY ONLY — see the Phase 8 section in the skill for the reduced format. Do NOT produce Phase 2 or Phase 7 diagrams — those are handled by the diagram-specialist. Reference component names from 02-structural-diagram.md to ensure consistency with the diagrams. Be thorough — the parent conversation handles all orchestration.
 
 #### Team — privacy-agent prompt
 
@@ -122,11 +176,11 @@ Substitute `{output_dir}` and `{project_root}` with actual paths in all prompts 
 
 #### Team — validation-specialist prompt
 
-> You are the validation specialist. Read your full instructions from ~/.claude/agents/validation-specialist.md. Read ALL assessment outputs in {output_dir}/: the 8 threat model phases (01-08), plus privacy-assessment.md, compliance-gap-analysis.md, and code-security-review.md. Also read the visual completeness checklist at {output_dir}/visual-completeness-checklist.md. Reference files are at ~/.claude/skills/threat-model/references/ (frameworks.md, agent-output-protocol.md, mermaid-spec.md, mermaid-layers.md). Perform all 7 validation steps from your instructions. Write {output_dir}/validation-report.md with all findings. The project root is {project_root}.
+> You are the validation specialist. Read your full instructions from ~/.claude/agents/validation-specialist.md. Read ALL assessment outputs in {output_dir}/: the 8 threat model phases (01-08; note that 08 is a summary), plus privacy-assessment.md, compliance-gap-analysis.md, and code-security-review.md. Also read the visual completeness checklist at {output_dir}/visual-completeness-checklist.md. Reference files are at ~/.claude/skills/threat-model/references/ (frameworks.md, agent-output-protocol.md, mermaid-spec.md, mermaid-layers.md). Perform all 7 validation steps from your instructions. Write {output_dir}/validation-report.md with all findings. The project root is {project_root}.
 
 #### Team — report-analyst prompt
 
-> Generate the consolidated security assessment report from ALL outputs. OUTPUT DIRECTORY: {output_dir}/. Read ALL .md files in {output_dir}/ as inputs (01-reconnaissance.md through 08-threat-model-report.md, plus privacy-assessment.md, compliance-gap-analysis.md, code-security-review.md, validation-report.md, visual-completeness-checklist.md). FIRST: Read the report template at ~/.claude/skills/threat-model/references/report-template.md. Follow the template EXACTLY. You have Bash access. GENERATE ALL FOUR FORMATS using your docx, pdf, pptx, and frontend-design skills: 1. report.html 2. report.docx 3. report.pdf 4. executive-summary.pptx. CRITICAL: You MUST generate all four files yourself. When installing Python packages, ALWAYS use a venv: python3 -m venv /tmp/report-venv && source /tmp/report-venv/bin/activate && pip install python-docx python-pptx reportlab Pillow. Render Mermaid diagrams to PNG: npx -y @mermaid-js/mermaid-cli -i file.mmd -o file.png -c ~/.claude/skills/threat-model/references/mermaid-config.json -w 3000 --scale 2 -b white. Deduplicate findings across all sources. Apply corrections from validation-report.md. The project root is {project_root}. BEFORE DECLARING DONE: Verify all files exist and are non-empty.
+> Generate the consolidated security assessment report from ALL outputs. OUTPUT DIRECTORY: {output_dir}/. Read ALL .md files in {output_dir}/ as inputs (01-reconnaissance.md through 08-threat-model-report.md — note that 08 is a summary, the full report structure comes from the template — plus privacy-assessment.md, compliance-gap-analysis.md, code-security-review.md, validation-report.md, visual-completeness-checklist.md). FIRST: Read the report template at ~/.claude/skills/threat-model/references/report-template.md. Follow the template EXACTLY. You have Bash access. GENERATE ALL FOUR FORMATS using your docx, pdf, pptx, and frontend-design skills: 1. report.html 2. report.docx 3. report.pdf 4. executive-summary.pptx. CRITICAL: You MUST generate all four files yourself. When installing Python packages, ALWAYS use a venv: python3 -m venv /tmp/report-venv && source /tmp/report-venv/bin/activate && pip install python-docx python-pptx reportlab Pillow. Render Mermaid diagrams to PNG: npx -y @mermaid-js/mermaid-cli -i file.mmd -o file.png -c ~/.claude/skills/threat-model/references/mermaid-config.json -w 3000 --scale 2 -b white. Deduplicate findings across all sources. Apply corrections from validation-report.md. The project root is {project_root}. BEFORE DECLARING DONE: Verify all files exist and are non-empty.
 
 ### Post-Assessment Verification
 
@@ -401,62 +455,40 @@ Produce the L4 diagram in a fenced code block. Save as `{name}-L4-threat.mmd`.
 
 **File Output**: Save to `{output_dir}/07-final-diagram.md`.
 
-## Phase 8 — Final Report
+## Phase 8 — Threat Model Summary
 
-Produce the complete threat model report. Follow the exact structure and table formats in [references/report-template.md](references/report-template.md) — it defines section ordering, required elements per section, table column headers, cross-reference integrity rules, and diagram placement rules.
+Produce a concise threat model summary. The full consolidated report (with all 14 sections, tables, diagrams, and cross-references) is produced by the report-analyst using `references/report-template.md`. Phase 8 captures the security-architect's analytical conclusions in a lightweight format that downstream agents can quickly read.
 
-### Report Structure
+**Do NOT consult `references/report-template.md`** — that template is for the report-analyst's consolidated report, not for this summary.
 
-1. **Executive Summary**: 3-5 sentence overview. Total threats found by severity. Top 3 risks. Overall security posture assessment (CRITICAL / CONCERNING / MODERATE / ACCEPTABLE / STRONG).
+### Summary Structure
 
-2. **System Overview**: Brief description of the system, its purpose, key components, and deployment model. Reference source materials analyzed.
+1. **Executive Summary** (5-10 sentences):
+   - Overall security posture assessment (CRITICAL / CONCERNING / MODERATE / ACCEPTABLE / STRONG)
+   - Total threats found by severity (table: CRITICAL | HIGH | MEDIUM | LOW counts)
+   - Top 3 risks with one-sentence business impact for each
+   - Key strengths observed
 
-3. **Threat Model Diagrams**: All layer diagrams (L1-L4, or L1+L4 for small systems) from Phases 2 and 7. Include companion diagrams: auth sequence (Phase 3), attack trees (Phase 5), and data lifecycle (Phase 1, if produced). Render all `.mmd` files to PNG using the config from [mermaid-spec.md](references/mermaid-spec.md) §2. Embed PNGs in the report.
+2. **Validated Findings Summary Table**:
 
-4. **Asset Inventory Table**: All data assets with sensitivity classification, storage location, encryption status, and access controls.
+   | ID | Threat | Severity | STRIDE-LM | Likelihood | Impact | Risk Score | Confidence | Affected Component(s) |
+   |----|--------|----------|-----------|------------|--------|------------|------------|----------------------|
+   | TM-001 | ... | CRITICAL | S,E | 5 | 5 | 25 | HIGH | ... |
 
-5. **Threat Actor Profiles**: Summary of the 3-5 threat actor profiles from Phase 1, including which threats each actor is associated with from the analysis.
+   Include ALL validated findings from Phase 6 plus any Phase 5 additions. This table is the authoritative finding list for the validation-specialist and report-analyst.
 
-6. **Threat Summary Table**: All validated findings in a table with columns: ID | Threat | STRIDE-LM | Likelihood | Impact | Risk Score | CIA | MITRE ATT&CK | CWE | OWASP | Confidence | Severity.
+3. **Remediation Priority List**:
+   - Group remediation recommendations by implementation wave (Wave 1-4)
+   - For each recommendation: R-ID, title, addresses which finding(s), effort estimate (LOW/MEDIUM/HIGH), dependencies
+   - Mark quick wins (high impact, low effort, no dependencies)
+   - Use dependency notation: `R-003 -> R-007 -> R-012`
 
-7. **Detailed Findings**: Grouped by severity (CRITICAL, HIGH, MEDIUM, LOW). Each finding includes:
-   - Title and ID
-   - Affected component(s)
-   - STRIDE-LM category
-   - Attack scenario (step-by-step)
-   - Threat actor(s) and their motivation
-   - PASTA likelihood rating with justification
-   - PASTA business impact rating with justification
-   - OWASP Risk Rating score and severity band
-   - Cross-framework references (MITRE, CWE, OWASP)
-   - CIA impact
-   - Existing mitigations (if any)
-   - Recommended remediation
-   - Confidence level
+4. **Assumptions and Scope** (brief):
+   - What was assumed, what was not analyzed
+   - Scope boundaries
+   - Threat model lifecycle triggers (when to re-assess)
 
-8. **Design Recommendations**: Prioritized list grouped by severity. Each recommendation includes the threat(s) it addresses, implementation guidance, and effort estimate (LOW/MEDIUM/HIGH).
-
-9. **Remediation Dependency Ordering**: After listing recommendations by severity, provide a "Recommended Implementation Order" section:
-   - Identify dependencies between remediations (e.g., "Add certificate authority" must precede "Enable mTLS").
-   - Group into implementation waves:
-     - **Wave 1 — Prerequisites**: Foundational changes that other remediations depend on
-     - **Wave 2 — Critical Fixes**: CRITICAL and HIGH severity remediations
-     - **Wave 3 — Hardening**: MEDIUM severity remediations and defense-in-depth improvements
-     - **Wave 4 — Monitoring & Observability**: Logging, alerting, and detection improvements
-   - Mark quick wins: high impact, low effort, no dependencies.
-   - Use dependency notation: `R-003 -> R-007 -> R-012` meaning implement in that order.
-
-10. **LINDDUN Privacy Assessment**: Summary of privacy threats identified, regulatory implications (GDPR, CCPA, HIPAA as applicable), and privacy-specific recommendations.
-
-11. **Positive Observations**: Security controls and design decisions that are working well.
-
-12. **False Negative Hunting Results**: Summary of Phase 5 findings — what additional threats were discovered and what areas remain uncertain.
-
-13. **Assumptions and Limitations**: What was assumed, what was not analyzed, what additional information would improve the model. Scope boundaries.
-
-14. **Threat Model Lifecycle Triggers**: Define update triggers including architecture changes, incidents, compliance changes, and minimum annual cadence.
-
-**File Output**: Save the complete report to `{output_dir}/08-threat-model-report.md`.
+**File Output**: Save to `{output_dir}/08-threat-model-report.md`.
 
 ## Scaling Guidelines
 
@@ -468,7 +500,7 @@ Adapt the depth of analysis to the system's size. These are concrete rules, not 
 - **Phase 3**: STRIDE-LM assessment can be a single table covering all components rather than per-component narratives.
 - **Phase 4**: Scoring can be presented in a combined table with identification (inline with Phase 3 output format).
 - **Phase 5**: 1-2 kill chains sufficient.
-- **Phase 8**: Report sections can be combined where sparse. Executive summary and system overview can merge. LINDDUN section can be omitted if no personal data is processed.
+- **Phase 8**: Summary sections can be combined where sparse. LINDDUN section can be omitted if no personal data is processed.
 
 ### Medium Systems (6-20 components, 9-30 data flows)
 - **Phase 2**: MUST use full 4-layer approach (L1-L4) per [mermaid-layers.md](references/mermaid-layers.md) §6.
@@ -482,7 +514,7 @@ Adapt the depth of analysis to the system's size. These are concrete rules, not 
 - **Phase 4**: Score only MEDIUM-or-higher likelihood threats in full detail. LOW likelihood threats receive summary scoring (single-line justification).
 - **Phase 5**: 5 or more kill chains required, and they must span multiple trust zones.
 - **Phase 7**: Produce per-zone L4 diagrams in addition to the full system L4 if the full diagram exceeds 25 nodes.
-- **Phase 8**: Produce an executive summary readable in isolation (no references to detailed findings required to understand it). Consider splitting detailed findings by domain or trust zone into appendix sections.
+- **Phase 8**: Produce the summary with per-zone finding groups. The report-analyst will handle the full expanded report with appendix sections.
 
 ## Guidelines
 
