@@ -125,7 +125,7 @@ Every threat model diagram should be audited against these 26 meta-categories. C
 
 | Property | Value |
 |----------|-------|
-| Shape | Mermaid `note` blocks |
+| Shape | Enriched node labels (multi-line per mermaid-spec.md §5) |
 | Content | STRIDE-LM category, Risk Score, CWE reference |
 | Required pass | Risk overlay only |
 
@@ -140,7 +140,7 @@ Every threat model diagram should be audited against these 26 meta-categories. C
 
 | Property | Value |
 |----------|-------|
-| Shape | Mermaid `note` blocks |
+| Shape | Enriched node labels (multi-line) |
 | Content | Tech stack, authentication method, encryption details |
 | Required pass | Both (structural + risk overlay) |
 
@@ -189,7 +189,7 @@ Every threat model diagram should be audited against these 26 meta-categories. C
 | Property | Value |
 |----------|-------|
 | Shape | `-.->` dashed arrows = control plane, `-->` solid arrows = data plane |
-| Label prefix | `[CP]` for control plane, `[DP]` for data plane |
+| Label prefix | `[CTRL]` for control plane (per mermaid-spec.md §4), unprefixed data flow for data plane |
 | Required pass | Both (structural + risk overlay) |
 
 - [ ] **Applicable?** YES / NO (justification: _______________) / N/A

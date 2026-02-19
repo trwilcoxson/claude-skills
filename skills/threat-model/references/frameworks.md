@@ -399,8 +399,8 @@ PASTA is the seven-stage, risk-centric methodology that provides the **attack si
 | 3 | **Application Decomposition** — DFDs, trust boundaries, entry points | Phase 2 — Diagram | Mermaid DFD with trust boundaries |
 | 4 | **Threat Analysis** — Threat intelligence, attack patterns, threat agents | Phase 3 — STRIDE-LM + MITRE | Categorized threat inventory |
 | 5 | **Vulnerability Analysis** — Map threats to weaknesses | Phase 3 — CWE + OWASP | Weakness mappings per threat |
-| 6 | **Attack Modeling** — Build attack trees, simulate attack paths | Phase 3 + Phase 4 — Kill chains | Attack feasibility -> **Likelihood score (1-5)** |
-| 7 | **Risk & Impact Analysis** — Business impact, risk rating, prioritization | Phase 3 + Phase 5 — Validation | Business impact -> **Impact score (1-5)** |
+| 6 | **Attack Modeling** — Build attack trees, simulate attack paths | Phase 4 — Risk Quantification | Attack feasibility -> **Likelihood score (1-5)** |
+| 7 | **Risk & Impact Analysis** — Business impact, risk rating, prioritization | Phase 4 — Risk Quantification | Business impact -> **Impact score (1-5)** |
 
 ### Stage 6 — Attack Modeling (produces Likelihood)
 
