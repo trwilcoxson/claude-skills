@@ -139,31 +139,31 @@ The decision depends on the SYSTEM, not the user's wording. "Threat model X" doe
 2. **Spawn `security-architect`** (blocking) — Phase 1 only:
    - `subagent_type`: `"security-architect"`
    - `name`: `"threat-modeler-recon"`
-   - `prompt`: See [Solo — security-architect Phase 1 prompt](#solo--security-architect-phase-1-prompt) below
+   - `prompt`: See "Solo — security-architect Phase 1 prompt" in [references/agent-prompts.md](references/agent-prompts.md)
    - Writes `01-reconnaissance.md` and `visual-completeness-checklist.md`.
 
 3. **Spawn `security-architect`** (blocking) — Phase 2 (structural diagrams):
    - `subagent_type`: `"security-architect"`
    - `name`: `"diagram-specialist"`
-   - `prompt`: See [diagram-specialist Phase 2 prompt](#diagram-specialist-phase-2-prompt) below
+   - `prompt`: See "Diagram-specialist Phase 2 prompt" in [references/agent-prompts.md](references/agent-prompts.md)
    - Reads `01-reconnaissance.md`, writes `02-structural-diagram.md`.
 
 4. **Spawn `security-architect`** (blocking) — Phases 3-6, 8:
    - `subagent_type`: `"security-architect"`
    - `name`: `"threat-modeler-analysis"`
-   - `prompt`: See [Solo — security-architect Phases 3-6,8 prompt](#solo--security-architect-phases-3-68-prompt) below
+   - `prompt`: See "Solo — security-architect Phases 3-6,8 prompt" in [references/agent-prompts.md](references/agent-prompts.md)
    - Reads prior phases from files, writes `03-threat-identification.md` through `06-validated-findings.md` and `08-threat-model-report.md` (summary only).
 
 5. **Spawn `security-architect`** (blocking) — Phase 7 (risk overlay diagram):
    - `subagent_type`: `"security-architect"`
    - `name`: `"diagram-specialist-overlay"`
-   - `prompt`: See [diagram-specialist Phase 7 prompt](#diagram-specialist-phase-7-prompt) below
+   - `prompt`: See "Diagram-specialist Phase 7 prompt" in [references/agent-prompts.md](references/agent-prompts.md)
    - Reads `02-structural-diagram.md`, `04-06.md`, writes `07-final-diagram.md`.
 
 6. **Spawn `report-analyst`** (blocking):
    - `subagent_type`: `"report-analyst"`
    - `name`: `"report-generator"`
-   - `prompt`: See [Solo — report-analyst prompt](#solo--report-analyst-prompt) below
+   - `prompt`: See "Solo — report-analyst prompt" in [references/agent-prompts.md](references/agent-prompts.md)
 
 ### Team Workflow
 
@@ -172,44 +172,44 @@ The decision depends on the SYSTEM, not the user's wording. "Threat model X" doe
 2. **Spawn `security-architect`** (blocking) — Phase 1 only:
    - `subagent_type`: `"security-architect"`
    - `name`: `"threat-modeler-recon"`
-   - `prompt`: See [Team — security-architect Phase 1 prompt](#team--security-architect-phase-1-prompt) below
+   - `prompt`: See "Team — security-architect Phase 1 prompt" in [references/agent-prompts.md](references/agent-prompts.md)
    - Writes `01-reconnaissance.md` and `visual-completeness-checklist.md`.
 
 3. **Spawn `security-architect`** (blocking) — Phase 2 (structural diagrams):
    - `subagent_type`: `"security-architect"`
    - `name`: `"diagram-specialist"`
-   - `prompt`: See [diagram-specialist Phase 2 prompt](#diagram-specialist-phase-2-prompt) below
+   - `prompt`: See "Diagram-specialist Phase 2 prompt" in [references/agent-prompts.md](references/agent-prompts.md)
    - Reads `01-reconnaissance.md`, writes `02-structural-diagram.md`.
 
 4. **Spawn `security-architect`** (blocking) — Phases 3-6, 8:
    - `subagent_type`: `"security-architect"`
    - `name`: `"threat-modeler-analysis"`
-   - `prompt`: See [Team — security-architect Phases 3-6,8 prompt](#team--security-architect-phases-3-68-prompt) below
+   - `prompt`: See "Team — security-architect Phases 3-6,8 prompt" in [references/agent-prompts.md](references/agent-prompts.md)
    - Reads prior phases from files, writes `03-threat-identification.md` through `06-validated-findings.md` and `08-threat-model-report.md` (summary only).
 
 5. **Spawn `security-architect`** (blocking) — Phase 7 (risk overlay diagram):
    - `subagent_type`: `"security-architect"`
    - `name`: `"diagram-specialist-overlay"`
-   - `prompt`: See [diagram-specialist Phase 7 prompt](#diagram-specialist-phase-7-prompt) below
+   - `prompt`: See "Diagram-specialist Phase 7 prompt" in [references/agent-prompts.md](references/agent-prompts.md)
    - Reads `02-structural-diagram.md`, `04-06.md`, writes `07-final-diagram.md`.
 
 6. **Spawn 3 specialists in parallel** (`run_in_background: true` on all 3):
-   - **privacy-agent**: `subagent_type`: `"privacy-agent"`, `name`: `"privacy-specialist"` — see [privacy-agent prompt](#team--privacy-agent-prompt)
-   - **grc-agent**: `subagent_type`: `"grc-agent"`, `name`: `"compliance-specialist"` — see [grc-agent prompt](#team--grc-agent-prompt)
-   - **code-review-agent**: `subagent_type`: `"code-review-agent"`, `name`: `"code-security-specialist"` — see [code-review-agent prompt](#team--code-review-agent-prompt)
+   - **privacy-agent**: `subagent_type`: `"privacy-agent"`, `name`: `"privacy-specialist"` — see "Team — privacy-agent prompt" in [references/agent-prompts.md](references/agent-prompts.md)
+   - **grc-agent**: `subagent_type`: `"grc-agent"`, `name`: `"compliance-specialist"` — see "Team — grc-agent prompt" in [references/agent-prompts.md](references/agent-prompts.md)
+   - **code-review-agent**: `subagent_type`: `"code-review-agent"`, `name`: `"code-security-specialist"` — see "Team — code-review-agent prompt" in [references/agent-prompts.md](references/agent-prompts.md)
 
 7. **Wait for all 3**: Call `TaskOutput(task_id=..., block=true)` for each background agent's task ID.
 
 8. **Spawn `general-purpose`** (blocking) as validation-specialist:
    - `subagent_type`: `"general-purpose"`
    - `name`: `"validation-specialist"`
-   - `prompt`: See [validation-specialist prompt](#team--validation-specialist-prompt)
+   - `prompt`: See "Team — validation-specialist prompt" in [references/agent-prompts.md](references/agent-prompts.md)
    - Reads all outputs, writes `validation-report.md`.
 
 9. **Spawn `report-analyst`** (blocking):
    - `subagent_type`: `"report-analyst"`
    - `name`: `"report-generator"`
-   - `prompt`: See [Team — report-analyst prompt](#team--report-analyst-prompt)
+   - `prompt`: See "Team — report-analyst prompt" in [references/agent-prompts.md](references/agent-prompts.md)
 
 ### Spawn Parameter Templates
 
