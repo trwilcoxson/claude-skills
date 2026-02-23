@@ -48,6 +48,31 @@ Runs comprehensive Python code quality checks in a single invocation. Orchestrat
 /python-quality src/ --fix   # Both
 ```
 
+### `software-architect` — Software Architecture Assistant
+
+Comprehensive architecture assistant covering the full lifecycle of software design decisions. Auto-detects 7 modes based on user intent, with 12 deep-reference files loaded progressively.
+
+**Modes:**
+- **PLAN** — Greenfield architecture design (7 phases: context → QA workshop → pattern selection → domain decomposition → spec → governance → output)
+- **REVIEW** — Architecture assessment with health rating (CRITICAL → EXCELLENT)
+- **SCORECARD** — Elite 9-section design review (53 items, 4 STOP-SHIP triggers)
+- **DECIDE** — Architecture decision records (MADR 3.0)
+- **DOCUMENT** — C4 diagrams, arc42, ADRs from codebase analysis
+- **DEBT** — Technical debt assessment with SQALE taxonomy and quantification
+- **MIGRATE** — Migration planning (Strangler Fig, Branch by Abstraction, Parallel Run)
+
+**Key principles:** Modular monolith as default, boundaries first, reliability as a feature, automated fitness functions, SLO-driven observability. Covers 2026 patterns including cell-based architecture, AI-native architecture, and platform engineering.
+
+**Usage:**
+```
+Design the architecture for [system]
+Review the architecture of this codebase
+Run the architecture scorecard against this system
+Should I use microservices or a modular monolith?
+Assess the technical debt in this project
+Plan a migration from monolith to microservices
+```
+
 ## Installation
 
 ### threat-model
@@ -73,7 +98,19 @@ cp -r skills/python-quality ~/.claude/skills/python-quality
 cp -r skills/python-quality .claude/skills/python-quality
 ```
 
-Then restart Claude Code or start a new session. The skill will appear in autocomplete when you type `/`.
+### software-architect
+
+Copy the skill directory:
+
+```bash
+# Global (available in all projects)
+cp -r skills/software-architect ~/.claude/skills/software-architect
+
+# Project-specific
+cp -r skills/software-architect .claude/skills/software-architect
+```
+
+Then restart Claude Code or start a new session.
 
 ## Structure
 
@@ -84,6 +121,9 @@ skills/
     references/           # 11 reference files (frameworks, mermaid, templates)
   python-quality/
     python-quality.md     # The skill file
+  software-architect/
+    SKILL.md              # 7-mode architecture assistant with progressive reference loading
+    references/           # 12 reference files (patterns, C4, ADR, arc42, debt, fitness, migration)
 ```
 
 ## Related
