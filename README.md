@@ -48,6 +48,24 @@ Runs comprehensive Python code quality checks in a single invocation. Orchestrat
 /python-quality src/ --fix   # Both
 ```
 
+### `agentic-ai-requirements` — Agentic AI System Assessment
+
+Assess, design, and score agentic AI systems against a comprehensive enterprise-grade requirements framework. Covers 12 categories, 88+ requirements, and MUST/SHOULD/MAY priority levels. Grounded in Feb 2026 state-of-the-art across LangGraph, CrewAI, Pydantic AI, Google ADK, OpenAI Agents SDK, Claude Agent SDK, DSPy, MCP/A2A protocols, NIST AI RMF, EU AI Act, and OWASP Top 10 for LLMs.
+
+**Modes:**
+- **ASSESS** — Evaluate an existing agentic AI codebase (4-phase: reconnaissance → requirement mapping → anti-pattern detection → scored report)
+- **DESIGN** — Architect a new agent system against the requirements framework
+- **CHECKLIST** — Lightweight quick-reference scoring (30 MUST + 36 SHOULD items)
+
+**Categories:** Agent Architecture, Reasoning and Decision Logic, Memory and State, Tool Use and Integration, Multi-Agent Coordination, Evaluation and Testing, Observability and Monitoring, Safety and Security, Ethics and Responsible AI, Deployment and Operations, Documentation and Reproducibility, Governance and Compliance.
+
+**Usage:**
+```
+Assess my agent system against agentic AI requirements
+Design an agent system for [use case]
+Run the agentic AI checklist against this project
+```
+
 ### `software-architect` — Software Architecture Assistant
 
 Comprehensive architecture assistant covering the full lifecycle of software design decisions. Auto-detects 7 modes based on user intent, with 12 deep-reference files loaded progressively.
@@ -98,6 +116,18 @@ cp -r skills/python-quality ~/.claude/skills/python-quality
 cp -r skills/python-quality .claude/skills/python-quality
 ```
 
+### agentic-ai-requirements
+
+Copy the skill directory:
+
+```bash
+# Global (available in all projects)
+cp -r skills/agentic-ai-requirements ~/.claude/skills/agentic-ai-requirements
+
+# Project-specific
+cp -r skills/agentic-ai-requirements .claude/skills/agentic-ai-requirements
+```
+
 ### software-architect
 
 Copy the skill directory:
@@ -119,6 +149,9 @@ skills/
   threat-model/
     SKILL.md              # Orchestration guide + 8-phase methodology
     references/           # 11 reference files (frameworks, mermaid, templates)
+  agentic-ai-requirements/
+    SKILL.md              # 3-mode assessment framework with progressive reference loading
+    references/           # 8 reference files (requirements, patterns, safety, compliance, anti-patterns)
   python-quality/
     python-quality.md     # The skill file
   software-architect/
