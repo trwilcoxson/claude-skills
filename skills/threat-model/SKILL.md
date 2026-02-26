@@ -224,6 +224,10 @@ cp ~/.claude/skills/threat-model/references/*.md /tmp/threat-model-refs/
 cp ~/.claude/skills/threat-model/references/*.json /tmp/threat-model-refs/
 cp ~/.claude/agents/diagram-specialist.md /tmp/threat-model-refs/diagram-specialist-agent.md 2>/dev/null || true
 cp ~/.claude/agents/validation-specialist.md /tmp/threat-model-refs/validation-specialist-agent.md 2>/dev/null || true
+# Copy compliance-assessment reference files (for GRC agent and validation-specialist)
+cp ~/.claude/skills/compliance-assessment/references/*.md /tmp/threat-model-refs/ 2>/dev/null || true
+# Copy privacy-impact-assessment reference files (for privacy agent and validation-specialist)
+cp ~/.claude/skills/privacy-impact-assessment/references/*.md /tmp/threat-model-refs/ 2>/dev/null || true
 ```
 
 Note: The `~` in the prep step expands at the orchestrator level (which runs in the parent conversation's shell). Sub-agents only ever see `/tmp/threat-model-refs/` via the `{refs_dir}` variable.
