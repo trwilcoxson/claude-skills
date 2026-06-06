@@ -9,6 +9,11 @@ three questions the skill could not answer about itself before:
 3. **Did a model change break or obsolete it?** Compare against a blessed baseline (regression),
    and watch whether the bare model starts passing without the skill (outgrowth).
 
+A real run is committed under [`sample-run/`](sample-run/RESULTS.md) (Claude Opus 4.8): the skill
+passed 8/8 vs 4/8 for the no-skill baseline (mean rubric score 0.96 vs 0.77), and the analysis
+surfaced a concrete backlog of skill fixes — including a genuine prompt-injection-handling gap the
+skill missed. See `sample-run/report.html` and `sample-run/RESULTS.md`.
+
 ## Not the same thing as the runtime validation layer
 
 The skill already has strong **in-run quality control** — Phase 5 false-negative hunting, Phase 6

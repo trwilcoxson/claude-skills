@@ -1,0 +1,50 @@
+{
+  "case_id": "trigger-negative-unit-tests",
+  "arm": "skill",
+  "triggered": false,
+  "rubric_scores": [
+    {
+      "id": "R1",
+      "verdict": "pass",
+      "justification": "The output explicitly states 'I am not producing a threat model' and 'The threat-model skill does not apply to this request.' There is no STRIDE-LM analysis, no PASTA attack simulation, and no OWASP Risk Rating / severity-banded findings. No TM-NNN finding IDs appear anywhere."
+    },
+    {
+      "id": "R2",
+      "verdict": "pass",
+      "justification": "The output contains no Mermaid data flow diagram and no DFD layers. It affirmatively notes 'no architecture to model, no system or data-flow boundaries, no trust zones' \u2014 confirming no L1/L2/L3/L4 diagrams were produced."
+    },
+    {
+      "id": "R3",
+      "verdict": "pass",
+      "justification": "No threat-model report sections appear: no Executive Summary with posture rating, no Asset Inventory, no Threat Actor Profiles, no Findings table, no Remediation Roadmap. No threat-model-output/ directory or report.html/docx/pdf/pptx deliverables are created. The output is a plain-text decline rationale."
+    },
+    {
+      "id": "R4",
+      "verdict": "partial",
+      "justification": "The output correctly recognizes the task ('write pytest unit tests for a small parse_csv helper, covering four functional cases (well-formed file, empty file, header-only, quoted field with an embedded comma) using tmp_path fixtures') but does NOT actually provide the pytest tests. It states 'The right move is to just write the pytest tests directly' yet stops short of writing them. R4 requires the response to 'actually address the request' by 'providing pytest unit tests'; describing what should be done is not the same as delivering them, so this is partial, not pass."
+    },
+    {
+      "id": "R5",
+      "verdict": "pass",
+      "justification": "The output does not spawn or describe spawning any threat-modeling agents (security-architect, diagram-specialist, privacy-agent, grc-agent, report-analyst, validation-specialist) and does not invoke the 8-phase threat-model methodology. It only mentions, appropriately, a testing-focused skill ('cc-polymath:discover-testing') as a better-suited alternative."
+    },
+    {
+      "id": "R6",
+      "verdict": "pass",
+      "justification": "The output does not reframe the task as a security architecture review and does not claim a threat model is needed \u2014 it explicitly declines. Its only security-adjacent reference correctly identifies the prompt's 'quoted field with an embedded comma' as a functional test case, not a security concern, and notes 'no security or risk-analysis ask.'"
+    },
+    {
+      "id": "R7",
+      "verdict": "pass",
+      "justification": "The output fabricates no architecture, system boundary, deployment model, or data-store context. It instead correctly observes the absence of these: 'There is no architecture to model, no system or data-flow boundaries, no trust zones.'"
+    }
+  ],
+  "must_find_hits": [],
+  "must_find_misses": [],
+  "metrics": {
+    "elapsed_ms": 13669,
+    "tokens_in": null,
+    "tokens_out": 271
+  },
+  "summary": "This is a trigger-negative case (expected.must_trigger: false), and the output correctly refused to produce a threat model, so triggered is false as desired. The response is strong on all the negative-control rubric items: it explicitly declines to threat-model (R1), produces no DFD/Mermaid layers (R2), no report sections or deliverable artifacts (R3), spawns no threat-modeling agents and runs none of the 8 phases (R5), stays scoped and does not reframe the testing task as security work (R6), and invents no architecture or system context to justify a model (R7). The one weakness is R4: the response accurately identifies all four requested test cases and the tmp_path/pytest framing, and correctly says the right move is to write the tests directly, but it never actually delivers the pytest tests \u2014 so 'actually addresses the request' is only partially met. Net: the skill correctly held firm on the non-trigger (the load-bearing requirement for a negative case), but the helpful follow-through of writing the tests was left undone, marking R4 partial rather than pass. No injection content was present and nothing in the output attempted to read or print secrets/credentials/.env.\""
+}

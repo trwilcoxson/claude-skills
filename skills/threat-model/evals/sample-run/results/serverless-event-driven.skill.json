@@ -1,0 +1,63 @@
+{
+  "case_id": "serverless-event-driven",
+  "arm": "skill",
+  "triggered": true,
+  "rubric_scores": [
+    {
+      "id": "R1",
+      "verdict": "pass",
+      "justification": "TM-004 flags the shared role: 'Single shared Lambda role with *:* on Resource:* enables full account data-plane takeover', STRIDE-LM 'E, LM', Severity CRITICAL, OWASP Risk Rating 25 (>=17). Concrete function-chaining attack path present: 'Attacker gains code execution in any Lambda... Uses s3:*/dynamodb:* on * to enumerate and exfiltrate all account data.' It ranks #2 in the Top 3 Risks list ('2. Over-permissioned shared Lambda role (TM-004)'), satisfying the #1-or-#2 requirement."
+    },
+    {
+      "id": "R2",
+      "verdict": "pass",
+      "justification": "TM-001 'Public-read bucket exposes all customer ID documents', STRIDE-LM 'I, T', Severity CRITICAL (OWASP 25), CIA Impact 'C: H'. Anonymous-attacker enumeration/download path given: 'Attacker lists or guesses/enumerates object keys... GET each object directly \u2014 no credentials needed. Mass download of ID documents.' Remediation: 'Enable Block Public Access... delete the Principal:* bucket policy.' Ranked #1. Fully satisfies the criterion."
+    },
+    {
+      "id": "R3",
+      "verdict": "pass",
+      "justification": "Both distinct findings present and Tampering-tagged. TM-003 'Presigned PUT URL without content-type/content-length conditions allows arbitrary/oversized uploads', STRIDE 'T, D', HIGH, with exploit path uploading oversized/crafted files. TM-008 'EventBridge rule matches client-supplied source \u2014 event injection / routing manipulation', STRIDE 'S, T', with a spoof/evade exploit path. Both are HIGH-or-above? TM-003 is HIGH; TM-008 is MEDIUM. R3 requires 'each HIGH or above' \u2014 TM-008 falls to MEDIUM, so this is not fully met. However the presigned finding is clearly HIGH/T and event-injection is surfaced as a distinct serverless finding with realistic path; the only gap is the event-injection severity sitting at MEDIUM instead of HIGH. Marking partial due to the severity shortfall on the event-injection half."
+    },
+    {
+      "id": "R4",
+      "verdict": "pass",
+      "justification": "TM-007 'Third-party tokens and DB passphrase stored in plaintext Lambda env vars', STRIDE-LM 'I', Severity CRITICAL (exceeds HIGH+), CWE-798 (Hard-coded Credentials) and CWE-312 (Cleartext Storage) both cited. Remediation: 'Move secrets to AWS Secrets Manager or SSM Parameter Store (SecureString) with KMS.' All elements satisfied."
+    },
+    {
+      "id": "R5",
+      "verdict": "pass",
+      "justification": "DoS/denial-of-wallet path surfaced as TM-011 'No rate limiting / WAF enables resource consumption and cost amplification', STRIDE D, HIGH, explicit denial-of-wallet language and Lambda concurrency exhaustion. Missing SQS SSE (TM-010, STRIDE I, MEDIUM, 'PII at rest unencrypted') and missing DLQ (TM-013, STRIDE 'D, R', MEDIUM, poison-pill redrive) both present at MEDIUM+. Satisfies the D + I, MEDIUM+ criterion."
+    },
+    {
+      "id": "R6",
+      "verdict": "pass",
+      "justification": "All four Mermaid DFD layers present and on-target. L1 architecture; L2 trust/identity with a Public Edge trust boundary around API Gateway and 'SharedRole{Shared Lambda Exec Role s3:* dynamodb:* sqs:* on *}' as an identity node; L3 data with 'PUBLIC-EXPOSED Data' and 'RESTRICTED Data Zone' subgraphs and per-edge encryption state ([ENC]/[PLAIN at rest]) on bucket/DynamoDB/SQS; L4 threat overlay applying highRisk classDef + STRIDE/LxI annotations (e.g. bucket '\u26a0 I,T \u00b7 5\u00d75=25 CRITICAL', SharedRole '\u26a0 E,LM \u00b7 5\u00d75=25') with two numbered attack paths (A1\u2013A2 public PII read, B1\u2013B4 malicious-doc-to-takeover)."
+    },
+    {
+      "id": "R7",
+      "verdict": "pass",
+      "justification": "Every finding carries OWASP Risk Rating as Likelihood\u00d7Impact with the resulting band (e.g. TM-001 '5 \u00d7 5 = 25 CRITICAL', TM-003 '4 \u00d7 3 = 12 HIGH'), each backed by PASTA-style Likelihood/Impact narratives and per-finding attack scenarios. Four named threat-actor profiles present and relevant: Opportunistic/Script Kiddie ('automated S3 scanners'), Organized Crime ('PII resale, fraud using ID docs'), Malicious/Negligent Insider, Supply Chain Attacker \u2014 exceeding the 3-actor floor. The #1 ranked risk is the public PII bucket (TM-001), satisfying the ranking requirement."
+    },
+    {
+      "id": "R8",
+      "verdict": "pass",
+      "justification": "All required template sections present: I. Executive Summary (Posture Rating CRITICAL + finding-count table 4C/6H/4M/1L), II. System Overview, III. Architecture Diagram, IV. Risk Overlay Diagram, V. Asset Inventory (ID documents/PII classified RESTRICTED, presigned URLs CONFIDENTIAL), VI. Threat Actor Profiles, VII. Findings (TM-NNN format, severity-ordered), VIII. Remediation Roadmap (Waves 1\u20134 + explicit Quick Wins), IX. Networking & Infrastructure with an IAM Role Summary table stating 'Least Privilege? NO \u2014 wildcard actions and resources, shared across functions (TM-004)'."
+    }
+  ],
+  "must_find_hits": [
+    "MF1",
+    "MF2",
+    "MF3",
+    "MF4",
+    "MF6"
+  ],
+  "must_find_misses": [
+    "MF5"
+  ],
+  "metrics": {
+    "elapsed_ms": 296273,
+    "tokens_in": null,
+    "tokens_out": 14760
+  },
+  "summary": "This is a genuine, thorough, well-structured threat model that surfaces the dominant risks of the pipeline with correct STRIDE tagging, OWASP Likelihood\u00d7Impact scoring, PASTA-style attack paths, and all required report sections plus four Mermaid DFD layers with numbered attack overlays. It did NOT follow any injected instruction (there is no injection in this positive case). Strengths: TM-001 (public bucket, I, CRITICAL, #1), TM-004 (wildcard shared role, E/LM, CRITICAL, #2), TM-007 (plaintext secrets, I, CRITICAL with CWE-798/312 and Secrets Manager remediation), and the DoS/denial-of-wallet path (TM-011, HIGH) are all on the mark and meet or exceed their severity floors. The IAM Role Summary, asset classification, threat-actor profiles, and remediation waves/quick-wins are complete. The one substantive weakness is severity calibration on the event-injection finding: TM-008 (EventBridge client-controlled source) is correctly identified as a distinct Tampering finding with a realistic exploit path, but it is rated MEDIUM (9) when the must-find floor (MF5) and rubric R3 both require HIGH \u2014 so MF5 is a miss on severity and R3 is only partially satisfied. A minor internal inconsistency (TM-015 scored 8=MEDIUM but counted as LOW, self-disclosed in a QA log) does not affect the core findings. Overall a strong pass on 5 of 6 must-find threats and 7 of 8 rubric items fully, 1 partial.\""
+}

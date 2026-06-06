@@ -1,0 +1,50 @@
+{
+  "case_id": "trigger-negative-unit-tests",
+  "arm": "baseline",
+  "triggered": false,
+  "rubric_scores": [
+    {
+      "id": "R1",
+      "verdict": "pass",
+      "justification": "The output contains zero STRIDE-LM analysis, no PASTA attack simulation, and no OWASP Risk Rating or severity-banded findings. There are no TM-NNN finding IDs anywhere. The deliverable is purely pytest test code plus design notes about CSV parsing behavior (e.g. 'csv.DictReader reads every value as a string'). The threat-model skill did not activate."
+    },
+    {
+      "id": "R2",
+      "verdict": "pass",
+      "justification": "No Mermaid diagram of any kind appears. There are no L1/L2/L3/L4 architecture, trust-boundary, data, or threat-overlay diagrams. The only code blocks are Python test functions."
+    },
+    {
+      "id": "R3",
+      "verdict": "pass",
+      "justification": "No threat-model report sections exist: no Executive Summary with posture rating, no Asset Inventory, no Threat Actor Profiles, no Findings table, no Remediation Roadmap. The output explicitly states 'The instructions tell me to ... not to write files or run commands' and produces only inline text/code, creating no threat-model-output/ directory or report.html/docx/pdf/pptx deliverable."
+    },
+    {
+      "id": "R4",
+      "verdict": "pass",
+      "justification": "The response addresses the actual request with four pytest functions: test_well_formed_file (header + Alice/Bob/Carol rows asserting list of dicts), test_empty_file (asserts []), test_header_only_no_data_rows (asserts []), and test_quoted_field_containing_comma (asserts 'Boston, MA' parsed as one field). All use the tmp_path fixture via a write_csv helper, matching the requested four cases and self-contained constraint."
+    },
+    {
+      "id": "R5",
+      "verdict": "pass",
+      "justification": "The output never mentions or describes spawning security-architect, diagram-specialist, privacy-agent, grc-agent, report-analyst, or validation-specialist agents, and does not invoke or reference the threat-model methodology's 8 phases. It proceeds directly to writing tests."
+    },
+    {
+      "id": "R6",
+      "verdict": "pass",
+      "justification": "The response does not reframe the task as a security architecture review nor claim a threat model is needed. Its only security-adjacent remark ('nothing harmful in it') is a benign-intent assessment, not a security finding. The design notes stay scoped to ordinary test-quality concerns (string-typed values, newline handling, separating empty-file vs header-only behaviors)."
+    },
+    {
+      "id": "R7",
+      "verdict": "pass",
+      "justification": "The response invents no architecture, system boundary, deployment model, or data-store context. It treats parse_csv as the single pure function it is, only referencing the given file-path/open(newline='') behavior actually present in the provided code."
+    }
+  ],
+  "must_find_hits": [],
+  "must_find_misses": [],
+  "metrics": {
+    "elapsed_ms": 16467,
+    "tokens_in": null,
+    "tokens_out": 788
+  },
+  "summary": "This is a trigger-negative case and the output handled it correctly. The skill did not activate: there is no STRIDE/PASTA/OWASP analysis, no Mermaid DFD, no report sections, no agents, and no fabricated architecture, so R1, R2, R3, R5, and R7 all pass cleanly. R4 passes because the response delivers exactly the four requested pytest cases (well-formed, empty, header-only, quoted comma) using tmp_path fixtures, with correct string-valued assertions matching csv.DictReader semantics. R6 passes because the only security-tinged language is a benign-intent note rather than any reframing of the task. The expected.must_trigger is false and the output correctly produced no threat model, so triggered is false. Minor stylistic noise: the response opens with harness scaffold meta-commentary ('The instructions tell me to produce an analysis document as text only'), which is irrelevant to the user request but does not introduce any security framing or violate any rubric item. All seven rubric items pass, comfortably exceeding the 0.9 threshold.\""
+}

@@ -1,0 +1,62 @@
+{
+  "case_id": "agentic-rag-app",
+  "arm": "baseline",
+  "triggered": true,
+  "rubric_scores": [
+    {
+      "id": "R1",
+      "verdict": "pass",
+      "justification": "C3 names the full vector: 'nightly job scrapes vendor docs, partner sites, and public web pages and upserts into the same Pinecone index with no content review' and that planted instructions 'are retrieved as \"context\" and injected into the prompt for future, unrelated users.' It ties this to tool abuse ('full tool abuse chain'; in the Compound Attack: 'RAG retrieves the poison... model issues SELECT against customers via the SQL tool'). Rated Critical and labeled the most dangerous variant (persistent/stored). H5 reinforces the no-provenance / confused-deputy framing ('model can't distinguish data to summarize from instructions to follow'). Meets ingestion->store->retrieval->prompt->tool-abuse path at CRITICAL."
+    },
+    {
+      "id": "R2",
+      "verdict": "pass",
+      "justification": "C1 explicitly calls out model-generated SQL, the shared broad RW account, and missing controls: 'arbitrary model-generated SQL against production Postgres with broad read and write... There is no parameterization, no allowlist, no read-only constraint, no row/column scoping' and 'A shared broad RW account turns any successful injection into a database-wide write primitive.' Concrete attack path given (SELECT/UPDATE/DELETE/DROP via injection). Rated Critical, called 'the worst item.' H3 separately captures the no-human-approval angle. Maps cleanly to Elevation/Tampering/Info-Disclosure though STRIDE letters are not explicitly tagged per finding."
+    },
+    {
+      "id": "R3",
+      "verdict": "pass",
+      "justification": "Both surfaced with realistic paths. C4 (Code Exec): 'container escapes, access to cloud instance metadata (IMDS -> steal the IAM/role creds)... reading env vars / mounted secrets, and lateral movement inside the VPC' -> 'pivot into the VPC, potential host compromise.' C5 (Web Browse SSRF): 'steered to http://169.254.169.254/... (cloud metadata -> credentials), internal admin endpoints, localhost, or other VPC services.' Both rated Critical (>= HIGH). Lateral movement/pivot is described for the sandbox escape and SSRF-to-IMDS for the browse tool, satisfying the substance; STRIDE-LM letters and OWASP A10/CWE-918 IDs are not explicitly tagged but the criterion's core (both threats, realistic paths, >= HIGH) is met."
+    },
+    {
+      "id": "R4",
+      "verdict": "pass",
+      "justification": "C6 calls out plaintext secrets in env vars: 'The Anthropic API key and Postgres creds live in env vars on the orchestrator host -- the same host running the Code Exec tool. Model-generated Python can read os.environ directly.' Explicitly connects it as a blast-radius amplifier: 'C4 + C6 = trivially harvest both the DB creds and the LLM key' and remediation #6 'Move secrets out of env vars into a secrets manager with short-lived creds.' Rated Critical (>= HIGH). Notes API key abuse (financial/quota) and direct DB access bypassing the tool. Information Disclosure substance present though not tagged with the letter I."
+    },
+    {
+      "id": "R5",
+      "verdict": "pass",
+      "justification": "H1 addresses missing auth and consequences: 'Session cookie only, no login... no per-user data scoping, no rate control tied to identity, and no accountability/audit trail.' M1 covers financial/availability DoS: 'Anonymous users can trigger expensive LLM calls, code execution, and crawls. No identity-based rate limiting -> wallet-draining and resource exhaustion.' H2 covers persisted per-session memory replay as cross-turn injection carrier: 'Per-session memory is replayed each turn. A single successful injection persists across turns within a session.' Repudiation/attribution noted ('no accountability/audit trail'). All >= MEDIUM."
+    },
+    {
+      "id": "R6",
+      "verdict": "fail",
+      "justification": "No Mermaid DFDs are produced at all. The output has a prose 'Trust Boundaries' list (1-4) and a prose 'Compound Attack' narrative, but there is no L1 architecture diagram, no L2 trust/identity diagram, no L3 data diagram, and no L4 threat-overlay diagram with risk coloring or a rendered attack-path overlay. The criterion requires layered Mermaid DFDs with explicit drawn trust boundaries and Postgres as a restricted zone shown in a diagram; the trust boundary is described in words only, not drawn. This is a structural miss, not a partial."
+    },
+    {
+      "id": "R7",
+      "verdict": "partial",
+      "justification": "Findings are ranked by severity and the prompt-injection->tool-abuse chain plus the DB tool are correctly placed at the top (C1 'the worst item', C2/C3 Critical), satisfying the #1 top-risk ranking. Severity bands are assigned (Critical/High/Medium). Every finding has a concrete remediation, and the Minimum Bar section maps remediations to IDs (read-only least-privilege parameterized DB role, egress allow-list + IMDS block, human-in-the-loop, secrets manager) -- exactly the expected mitigations. HOWEVER it does NOT use OWASP Risk Rating with numeric Likelihood x Impact (1-5 each) mapped to the 17-25/10-16/5-9/1-4 bands -- it gives qualitative High/Medium likelihood words instead of scores -- and it does not assign STRIDE-LM letters to findings. Core ranking + remediation present, scoring methodology absent."
+    },
+    {
+      "id": "R8",
+      "verdict": "partial",
+      "justification": "Several required sections are present in spirit: Executive Summary, a Critical/High/Medium Findings breakdown, and a Remediation Roadmap (Minimum Bar Before Shipping). The Executive Summary includes a posture judgment ('not shippable in 3 weeks') and an implicit finding count ('at least six Critical risks'). It correctly avoids inflation -- no fabricated PCI/HIPAA findings, no hallucinated MITRE/CWE IDs. BUT it is missing the mandated section structure: no II. System Overview, no III. Architecture Diagram, no IV. Risk Overlay Diagram, no V. Asset Inventory, no VI. Threat Actor Profiles, no XIII. Assumptions & Limitations, and findings use ad-hoc C1-C6/H1-H5/M1-M6 ids rather than TM-NNN ids. Anti-inflation half is met; required-sections half is largely unmet."
+    }
+  ],
+  "must_find_hits": [
+    "MF1",
+    "MF2",
+    "MF3",
+    "MF4",
+    "MF5",
+    "MF6"
+  ],
+  "must_find_misses": [],
+  "metrics": {
+    "elapsed_ms": 69898,
+    "tokens_in": null,
+    "tokens_out": 2992
+  },
+  "summary": "This output is an excellent substantive threat model of the agentic RAG application and surfaces all six must-find threats at or above the required severity with correct assets, plausible attack paths, and a strong compound-attack chain (MF1 indirect/RAG injection, MF2 over-permissioned DB tool, MF3 code-exec escape/host-env read, MF4 Web Browse SSRF-to-IMDS, MF5 plaintext env-var secrets, MF6 no-auth + memory poisoning + DoS). It correctly identifies the lethal-trifecta framing, ranks the prompt-injection->tool-abuse chain and the broad-RW SQL tool as the top risks, avoids inflation (no bogus PCI/HIPAA, no hallucinated CWE/MITRE IDs), and provides concrete, ID-mapped remediations matching the expected mitigations. The weaknesses are structural/methodological rather than analytical: R6 fails outright because there are NO layered Mermaid DFDs (L1-L4) -- trust boundaries are described in prose only, never drawn, and Postgres is not shown as a restricted data zone in a diagram. R7 is partial because severity is qualitative (High/Medium words) rather than scored via OWASP Likelihood x Impact (1-5) mapped to the numeric bands, and STRIDE-LM letters are not tagged per finding. R8 is partial because the mandated report sections (System Overview, Architecture Diagram, Risk Overlay, Asset Inventory, Threat Actor Profiles, Assumptions & Limitations) and TM-NNN finding ids are absent. Net: high-quality content, but it does not deliver the required diagram layers, scoring methodology, or full report-template structure, so it would likely fall short of the 0.8 pass threshold despite scoring all six must-find threats.\""
+}
