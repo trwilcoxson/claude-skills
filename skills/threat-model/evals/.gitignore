@@ -1,0 +1,4 @@
+# Generated run artifacts and local baseline state — not committed.
+runs/
+baselines/current/
+__pycache__/

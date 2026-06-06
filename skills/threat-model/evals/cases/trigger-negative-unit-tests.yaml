@@ -1,0 +1,83 @@
+id: trigger-negative-unit-tests
+title: Unit-test request for a CSV parser must NOT trigger threat modeling
+category: trigger-negative
+trigger_phrase: write unit tests for my CSV parser
+prompt: |-
+  Write unit tests for my Python function that parses CSV files.
+
+  Here's the function:
+
+  ```python
+  import csv
+
+  def parse_csv(path):
+      rows = []
+      with open(path, newline="") as f:
+          reader = csv.DictReader(f)
+          for row in reader:
+              rows.append(row)
+      return rows
+  ```
+
+  I'm using pytest. Please cover the normal case (a well-formed file with a header and a few data rows), an empty file, a file with only a header and no data rows, and a file with a quoted field that contains a comma. Use tmp_path fixtures to write the sample CSVs so the tests are self-contained. Thanks.
+expected:
+  must_trigger: false
+  dfd_layers: []
+  stride_categories: []
+  must_find_threats: []
+  top_risk_candidates: []
+  required_report_sections: []
+rubric:
+- id: R1
+  criterion: 'The threat-model skill does NOT activate: the response contains no STRIDE-LM threat analysis,
+    no PASTA attack simulation, and no OWASP Risk Rating / severity-banded findings (no TM-NNN finding
+    IDs).'
+  weight: 5
+- id: R2
+  criterion: The response produces NO Mermaid data flow diagram and no DFD layers (no L1/L2/L3/L4 architecture,
+    trust, data, or threat-overlay diagrams).
+  weight: 4
+- id: R3
+  criterion: The response produces NO threat-model report sections (no Executive Summary with posture
+    rating, no Asset Inventory, no Threat Actor Profiles, no Findings table, no Remediation Roadmap) and
+    creates no threat-model-output/ directory or report.html/docx/pdf/pptx deliverables.
+  weight: 4
+- id: R4
+  criterion: 'The response actually addresses the request: it provides pytest unit tests for parse_csv
+    covering the four requested cases (well-formed file, empty file, header-only file, quoted field containing
+    a comma), using tmp_path fixtures.'
+  weight: 4
+- id: R5
+  criterion: The response does not spawn or describe spawning threat-modeling agents (security-architect,
+    diagram-specialist, privacy-agent, grc-agent, report-analyst, validation-specialist) or invoke the
+    threat-model methodology's 8 phases.
+  weight: 3
+- id: R6
+  criterion: If the response mentions security at all, it stays scoped to ordinary test-quality concerns
+    (e.g., a malformed-input edge case) and does not reframe the task as a security architecture review
+    or claim a threat model is needed.
+  weight: 2
+- id: R7
+  criterion: The response does not fabricate an architecture, system boundary, deployment model, or data-store
+    context that was never provided in order to justify a threat model.
+  weight: 2
+pass_threshold: 0.9
+grounding: 'The threat-model SKILL.md description triggers only when the user asks for "a threat model,
+  threat analysis, security architecture review, attack surface analysis, data flow diagram (DFD), or
+  asks to analyze an architecture or system design for security risks." This prompt asks for pytest unit
+  tests of a single pure function — a routine development/testing task with none of those trigger conditions.
+  SKILL.md''s Phase 1 Reconnaissance presupposes a SYSTEM to assess (components, data assets, actors,
+  attack surface, trust boundaries, technology stack); a lone CSV-reading helper with no callers, no I/O
+  boundary beyond a local file path, no network, no data store, no auth, and no architecture provides
+  nothing to decompose. The Solo vs Team decision criteria (no PII/PHI/financial data, no cloud/IaC, no
+  compliance, fewer than 10 components, no multi-trust-domain architecture) are all absent, confirming
+  the system is not even Solo-mode threat-model material — it is out of scope entirely. STRIDE-LM (frameworks.md,
+  7 categories) and OWASP Risk Rating (Likelihood x Impact severity bands) presuppose components and data
+  flows to assess against; mermaid-layers.md L1-L4 presuppose an architecture to diagram; report-template.md
+  Sections I-XIV presuppose findings, assets, and threat actors. None of these inputs exist for a unit-test
+  request, so a correct run must decline to threat-model and instead just write the tests. The near-miss
+  surface tokens (''Python function'', ''parses CSV files'', file input) resemble a security context (untrusted
+  input parsing) but the explicit, unambiguous ask is test coverage for four functional cases via tmp_path/pytest
+  — recognizing intent over keyword overlap is the discriminator. pass_threshold is set to 0.9 because
+  a negative case must hold firm: any production of a DFD, STRIDE table, or TM-NNN findings is a hard
+  failure.'

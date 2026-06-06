@@ -1,0 +1,159 @@
+id: simple-crud
+title: Small internal CRUD app (Flask + Postgres + nginx on one VM) — proportionate threat model
+category: positive
+trigger_phrase: threat model this small internal CRUD app
+prompt: |-
+  Can you threat model this small internal app for me? Keep it proportionate — it's tiny.
+
+  It's an internal tool used by about 20 employees to manage a customer contact list.
+
+  Architecture:
+  - One Ubuntu VM in our office data center, reachable only over the corporate LAN (no public internet exposure).
+  - nginx out front as a reverse proxy on 443, terminating TLS, forwarding to the app.
+  - A single Flask application server (gunicorn) with exactly 3 endpoints:
+      - GET /login  -> serves the login page
+      - POST /login -> checks username/password against the users table, sets a session cookie
+      - GET/POST/DELETE /contacts -> list, create, and delete customer contacts (requires a valid session)
+  - A PostgreSQL 15 database on the SAME VM (localhost:5432). Two tables: `users` (username, password hash) and `contacts` (name, email, phone, notes).
+  - Contacts are built with raw SQL string formatting today (f-strings) because "it's just internal."
+  - Sessions use Flask's default signed-cookie sessions with a SECRET_KEY committed in the repo.
+  - No WAF, no rate limiting, no MFA. There is one shared "admin" DB superuser that the app connects as.
+
+  Customer contact data is mildly sensitive (names, emails, phones) but this is not regulated PCI/PHI data. Please give me a focused model, not a 50-page enterprise report.
+expected:
+  must_trigger: true
+  dfd_layers:
+  - L1
+  - L4
+  stride_categories:
+  - S
+  - T
+  - I
+  - E
+  - D
+  must_find_threats:
+  - id: MF1
+    description: 'SQL injection in /contacts: contact queries are built with raw f-string formatting,
+      allowing an authenticated employee (or anyone who steals a session) to inject arbitrary SQL, and
+      because the app connects as the Postgres superuser the injection yields full DB read/write/drop.
+      Must map to SQLi (CWE-89) and call out the superuser connection amplifying impact.'
+    stride: T
+    min_severity: HIGH
+  - id: MF2
+    description: 'Forgeable session cookies / authentication bypass: Flask signed-cookie sessions with
+      a SECRET_KEY committed to the repo means anyone with repo access can forge a valid session cookie
+      and impersonate any user without credentials. Spoofing/auth failure, CWE-798 (hard-coded credential/secret)
+      or CWE-287.'
+    stride: S
+    min_severity: HIGH
+  - id: MF3
+    description: 'Credential brute force / credential stuffing against POST /login: no rate limiting,
+      no MFA, no lockout, so an attacker on the LAN can automate password guessing against the users table.
+      Spoofing via brute force, CWE-307 / weak auth (A07:2021).'
+    stride: S
+    min_severity: MEDIUM
+  - id: MF4
+    description: Information disclosure of customer PII (names, emails, phones) and password hashes at
+      rest in PostgreSQL — single trust boundary, app and DB co-located, superuser access, no DB-level
+      access segmentation; compromise of the app or VM exposes the whole contacts + users tables. CWE-200
+      / CWE-311 (sensitivity of data at rest).
+    stride: I
+    min_severity: MEDIUM
+  - id: MF5
+    description: 'Elevation of privilege via the shared ''admin'' DB superuser: the app''s least-privilege
+      violation means any app-level compromise (SQLi, RCE, stolen session) escalates to full database
+      control rather than a scoped contacts role. Least-privilege / privilege management, CWE-269.'
+    stride: E
+    min_severity: MEDIUM
+  top_risk_candidates:
+  - MF1
+  - MF2
+  required_report_sections:
+  - Executive Summary
+  - System Overview
+  - Architecture Diagram
+  - Asset Inventory
+  - Threat Actor Profiles
+  - Findings
+  - Remediation Roadmap
+  - Assumptions & Limitations
+rubric:
+- id: R1
+  criterion: 'Scales DOWN correctly: treats this as a Small System (≤5 components, ≤8 data flows), uses
+    the Solo / 2-layer (L1 + L4) diagram approach per mermaid-layers.md §6, and does NOT spin up the full
+    team-mode enterprise pipeline. Total validated findings is proportionate (roughly 4-9, no padding);
+    does NOT over-generate dozens of speculative findings to fill the template.'
+  weight: 5
+- id: R2
+  criterion: Does NOT invent components or attack surface that were not described (e.g., no Redis/Memcached,
+    load balancer, Kubernetes/containers, cloud IAM/metadata service, S3/object storage, multi-tenancy,
+    public internet exposure, message queue, microservices). The model reflects exactly nginx + Flask/gunicorn
+    + PostgreSQL + login page on one LAN-only VM. Cloud-native, serverless, and multi-tenant threat sections
+    are correctly marked not applicable.
+  weight: 5
+- id: R3
+  criterion: 'Ranks the SQL injection in /contacts (raw f-string SQL) as the #1 or #2 finding at HIGH
+    or CRITICAL severity, tags it Tampering (T) with CWE-89, gives a concrete attack path, AND explicitly
+    notes that the app connecting as the Postgres superuser amplifies blast radius to full-database compromise.'
+  weight: 5
+- id: R4
+  criterion: Surfaces the committed Flask SECRET_KEY as a forgeable-session / authentication-bypass finding
+    at HIGH+ severity, tagged Spoofing (S), with the attack path that anyone with repo access can mint
+    a valid session cookie and impersonate users (CWE-798 or CWE-287).
+  weight: 4
+- id: R5
+  criterion: Identifies the single trust boundary at the nginx edge (untrusted LAN clients → trusted VM/app/DB)
+    and marks the PostgreSQL contacts+users store as holding sensitive data (PII + password hashes) at
+    rest, flagging Information Disclosure (I). Severity is calibrated to internal LAN-only, non-PCI/PHI
+    data (MEDIUM is acceptable, not auto-CRITICAL) rather than over-inflated.
+  weight: 3
+- id: R6
+  criterion: Flags the missing rate limiting / MFA / lockout on POST /login as a credential brute-force
+    / stuffing risk (Spoofing, CWE-307, A07:2021) AND flags the shared DB superuser as a least-privilege
+    / elevation-of-privilege violation (CWE-269), each with a concrete remediation (e.g., scoped DB role,
+    login throttling).
+  weight: 3
+- id: R7
+  criterion: Output includes the proportionate report sections (Executive Summary with posture rating
+    + finding counts, System Overview, Architecture Diagram with at least an L1 structural Mermaid DFD,
+    Asset Inventory, Threat Actor Profiles limited to ~2-3 relevant actors such as malicious/negligent
+    insider and LAN-positioned attacker, Findings with TM-NNN IDs and OWASP Likelihood×Impact scoring,
+    Remediation Roadmap, Assumptions & Limitations). Findings use OWASP Risk Rating (Likelihood 1-5 ×
+    Impact 1-5 with severity bands).
+  weight: 3
+- id: R8
+  criterion: Every finding carries a concrete, scenario-specific remediation step (parameterized queries
+    / ORM for SQLi, rotate SECRET_KEY out of repo into env/secret store, create a least-privilege contacts
+    DB role instead of superuser, add login rate limiting). Severities are justified by realistic attack
+    paths and the internal LAN-only deployment context, not theoretical maxima.
+  weight: 3
+pass_threshold: 0.8
+grounding: 'Expectations are grounded in the threat-model skill''s own scaling rules and framework references.
+  (1) SCALE-DOWN behavior: SKILL.md "Scaling Guidelines → Small Systems (5 or fewer components, 8 or fewer
+  data flows)" and "Solo vs Team Decision" (Solo ONLY when small, no sensitive-data-at-scale, no cloud/IaC,
+  no compliance) — this system is 4 components (nginx, Flask/gunicorn, Postgres, login page), LAN-only,
+  non-PCI/PHI, so Solo + the mermaid-layers.md §6 2-layer L1+L4 approach is the correct proportionate
+  response; SKILL.md Guidelines "Scale analysis proportionally — do not inflate findings to fill a template"
+  justifies R1 and the no-padding constraint. (2) R2 (no invented components) is grounded in Phase 1 reconnaissance
+  being ''purely observational'' and the cloud-native/serverless/multi-tenant sections in frameworks.md
+  being explicitly conditional (''Assess when the system runs in cloud infrastructure'' / ''if applicable'');
+  the visual-completeness-checklist requires NOT-APPLICABLE justifications. (3) MF1/R3 SQL injection:
+  frameworks.md STRIDE-LM Tampering + CWE-89 (Input Validation group) + OWASP A03:2021 Injection + MITRE
+  T1190; the superuser amplification ties to the CIA Impact Matrix (Integrity HIGH = critical data corrupted/dropped)
+  and PASTA Stage 7 business-impact, pushing Likelihood high (f-string SQL = trivially exploitable, Likelihood
+  4-5) × Impact (full DB read/write/drop) → HIGH/CRITICAL band per the OWASP Risk Score Matrix. (4) MF2/R4
+  committed SECRET_KEY: STRIDE-LM Spoofing + CWE-798 (Use of Hard-coded Credentials) / CWE-287, OWASP
+  A02/A07; trivially exploitable by anyone with repo access (Likelihood high) → HIGH. (5) MF3/R6 brute
+  force: STRIDE-LM Spoofing + CWE-307 (mapped via Authentication CWE group / weak password CWE-521) +
+  A07:2021 + MITRE T1110 Brute Force; no rate limit/MFA raises likelihood, but LAN-only bounds reach →
+  MEDIUM. (6) MF4/R5 PII + hash disclosure: STRIDE-LM Information Disclosure + CWE-200/CWE-311 (Data Protection
+  group); CIA Impact Matrix rates non-regulated PII as MEDIUM confidentiality (not the HIGH reserved for
+  PII/PHI/financial at scale), so OWASP severity should be calibrated to MEDIUM, demonstrating the OWASP
+  Risk Rating context-validation discipline from Phase 6. (7) MF5/R6 shared superuser: STRIDE-LM Elevation
+  of Privilege + CWE-269 + Zero Trust ''least privilege access'' criteria in frameworks.md. (8) R7/R8
+  required sections come from report-template.md Sections I, II, III, V, VI, VII, VIII, XIII (compliance
+  Section X and privacy Section XI are correctly OMITTED here since no compliance/privacy specialist runs
+  in Solo mode for non-regulated data, matching the conditional markers); Phase 1 ''threat actor profiles
+  can be 2-3 most relevant actors'' for small systems supports limiting actors to insiders + LAN-positioned
+  attacker; remediation requirement is SKILL.md Guidelines ''Every finding must include a concrete remediation
+  step.'''

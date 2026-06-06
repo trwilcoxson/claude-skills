@@ -1,0 +1,172 @@
+id: k8s-multitenant
+title: Multi-Tenant SaaS on Shared Kubernetes Cluster (namespace-per-tenant)
+category: positive
+trigger_phrase: threat model our multi-tenant Kubernetes platform
+prompt: |-
+  Please threat model our multi-tenant SaaS platform. We run a single shared Kubernetes cluster (EKS) and isolate customers with a namespace per tenant. Architecture:
+
+  - An NGINX ingress controller terminates TLS at the edge and routes by Host header to each tenant's Service. The ingress controller runs as a Deployment in the `ingress-nginx` namespace.
+  - Each tenant gets its own namespace (`tenant-<id>`) holding their app Deployments (Node.js + Python workloads), a Service, and a ResourceQuota that is defined but not consistently applied.
+  - A shared "control-plane" API (our own Go service in the `platform` namespace) provisions tenants, creates namespaces, and manages billing. It calls the Kubernetes API with a ServiceAccount that currently has cluster-admin via a ClusterRoleBinding.
+  - Tenant credentials and third-party API keys are stored as native Kubernetes Secrets in each tenant namespace; etcd encryption-at-rest is not enabled.
+  - Tenant container images are pulled from a shared private registry (Harbor). Tenants can push their own images; we do not enforce image signing or admission scanning.
+  - All tenant pods run on a shared pool of worker nodes (shared Linux kernel). We do not set seccomp/AppArmor profiles, and some legacy tenant pods request `privileged: true`. There are no NetworkPolicies, so pod-to-pod traffic is unrestricted cluster-wide.
+  - Pods can reach the EKS node IMDS endpoint (169.254.169.254); IMDSv2 hop limit is at default and the node instance role can read several S3 buckets.
+
+  We want to know our cross-tenant isolation risks before onboarding larger enterprise customers. Give us a full threat model.
+expected:
+  must_trigger: true
+  dfd_layers:
+  - L1
+  - L2
+  - L3
+  - L4
+  stride_categories:
+  - S
+  - T
+  - R
+  - I
+  - D
+  - E
+  - LM
+  must_find_threats:
+  - id: MF1
+    description: 'Container/namespace escape to the shared node kernel: privileged: true pods plus missing
+      seccomp/AppArmor on a shared-kernel node pool let a tenant break out of its container, compromise
+      the node, and reach other tenants'' pods/data co-scheduled on that node. Maps to Container & Orchestration
+      -> Container escape; STRIDE Elevation + Lateral Movement.'
+    stride: E
+    min_severity: CRITICAL
+  - id: MF2
+    description: 'Cluster-wide lateral movement via missing NetworkPolicies: with no network segmentation,
+      any compromised tenant pod can reach every other tenant Service, the platform control-plane API,
+      and the registry across namespaces. Maps to Pod-to-pod network policy gaps; STRIDE Lateral Movement.'
+    stride: LM
+    min_severity: HIGH
+  - id: MF3
+    description: 'Control-plane ServiceAccount over-privilege: the platform provisioning service holds
+      cluster-admin via ClusterRoleBinding, so compromising that one Go service (or its token) yields
+      full control of every tenant namespace, all Secrets, and node scheduling. Maps to Kubernetes RBAC
+      over-permission / least-privilege violation; STRIDE Elevation of Privilege.'
+    stride: E
+    min_severity: CRITICAL
+  - id: MF4
+    description: 'Secret exposure via unencrypted etcd + namespace-scoped Secrets readable after escape:
+      tenant creds and third-party API keys sit in native K8s Secrets (base64, not encrypted) with etcd
+      encryption-at-rest disabled, so node/etcd access or a cluster-admin token discloses all tenant secrets
+      at rest. Maps to etcd access / secrets exposure; STRIDE Information Disclosure.'
+    stride: I
+    min_severity: HIGH
+  - id: MF5
+    description: 'Pod access to node IMDS leading to cloud credential theft: pods can reach 169.254.169.254
+      with default IMDSv2 hop limit, letting a compromised/SSRF-able tenant workload steal the node instance
+      role and read the S3 buckets it can access (cross-tenant data and cloud blast radius). Maps to Cloud
+      Metadata & Instance Services -> IMDS to credential theft; STRIDE Information Disclosure + Elevation.'
+    stride: I
+    min_severity: HIGH
+  - id: MF6
+    description: 'Supply-chain image tampering: tenants can push images to the shared Harbor registry
+      with no signing or admission-time scanning, so a malicious or compromised image runs in the cluster
+      (and on shared nodes) without integrity verification. Maps to Container image supply chain; STRIDE
+      Tampering.'
+    stride: T
+    min_severity: HIGH
+  - id: MF7
+    description: 'Noisy-neighbor / resource-exhaustion DoS: ResourceQuotas defined but not consistently
+      applied and no enforced limits let one tenant exhaust shared node CPU/memory and starve co-tenant
+      workloads. Maps to Cross-Tenant Isolation -> Noisy neighbor DoS; STRIDE Denial of Service.'
+    stride: D
+    min_severity: MEDIUM
+  top_risk_candidates:
+  - Container/namespace escape via privileged pods + missing seccomp/AppArmor on shared-kernel nodes (MF1)
+  - Control-plane ServiceAccount cluster-admin over-privilege (MF3)
+  - Cluster-wide lateral movement from missing NetworkPolicies (MF2)
+  required_report_sections:
+  - I. Executive Summary
+  - II. System Overview
+  - III. Architecture Diagram
+  - IV. Risk Overlay Diagram
+  - V. Asset Inventory
+  - VI. Threat Actor Profiles
+  - VII. Findings
+  - VIII. Remediation Roadmap
+  - XIII. Assumptions & Limitations
+rubric:
+- id: R1
+  criterion: 'Triggers a full threat-model run (does not refuse or merely give generic advice): produces
+    STRIDE-LM identification, PASTA-derived likelihood/impact scoring, OWASP Risk Rating severity bands,
+    and at least L1+L4 Mermaid DFD layers (full 4-layer L1-L4 expected since this medium/6-20-component
+    system spans multiple trust domains). Selects Team mode given K8s/IaC, multi-tenant trust boundaries,
+    and credentials at scale.'
+  weight: 4
+- id: R2
+  criterion: 'Identifies container/namespace escape as a top finding: explicitly ties privileged: true
+    pods AND missing seccomp/AppArmor on the shared-kernel node pool to a concrete breakout->node-compromise->cross-tenant
+    attack path, tagged Elevation of Privilege (and Lateral Movement), rated CRITICAL (Risk >=17), and
+    ranked #1 or #2 overall.'
+  weight: 5
+- id: R3
+  criterion: Flags the platform control-plane ServiceAccount cluster-admin ClusterRoleBinding as a least-privilege
+    violation (STRIDE E, CWE-269 or CWE-732), rated CRITICAL or HIGH, with a remediation that scopes it
+    down to namespaced Roles/least-privilege RBAC.
+  weight: 4
+- id: R4
+  criterion: Surfaces missing NetworkPolicies as a cluster-wide Lateral Movement (LM) risk enabling cross-tenant
+    and tenant->control-plane pivots, rated HIGH or above, with a default-deny NetworkPolicy / micro-segmentation
+    remediation. Zero-trust east-west evaluation is referenced.
+  weight: 4
+- id: R5
+  criterion: 'Covers secret exposure: native K8s Secrets (base64, not encrypted) plus disabled etcd encryption-at-rest
+    flagged as Information Disclosure (CWE-312 cleartext storage or CWE-200), rated HIGH+, with remediation
+    enabling etcd encryption-at-rest and/or external secrets manager. Tenant creds and third-party API
+    keys named as RESTRICTED/CONFIDENTIAL assets in the asset inventory.'
+  weight: 3
+- id: R6
+  criterion: Addresses pod access to the node IMDS endpoint (169.254.169.254) as a path to node instance-role
+    credential theft and S3 blast radius (Information Disclosure / Elevation, SSRF CWE-918 or cloud metadata
+    pattern), rated HIGH+, with remediation to block IMDS from pods (hop-limit/IMDSv2 enforcement, NetworkPolicy/iptables
+    egress to link-local, or IRSA).
+  weight: 3
+- id: R7
+  criterion: Covers supply-chain image risk (tenant-pushable Harbor images, no signing/admission scanning
+    -> Tampering, A08:2021 / CWE related to integrity) AND noisy-neighbor resource-exhaustion DoS (unenforced
+    ResourceQuota -> Denial of Service, CWE-400/770). Both appear as distinct findings with remediations
+    (image signing + admission controller; enforced quotas/LimitRanges).
+  weight: 3
+- id: R8
+  criterion: Draws an accurate L2 trust-boundary diagram showing per-tenant namespace boundaries, the
+    ingress-nginx and platform namespaces, and the node/kernel as a shared trust boundary; marks tenant
+    Secret stores and the control-plane SA as high-risk in the L4 overlay; report uses the required section
+    structure (Exec Summary, System Overview, Architecture + Risk Overlay diagrams, Asset Inventory, Threat
+    Actor Profiles incl. malicious-tenant/insider, Findings TM-NNN, Remediation Roadmap with waves/quick
+    wins).
+  weight: 4
+pass_threshold: 0.8
+grounding: 'Expectations are grounded directly in the threat-model skill''s reference frameworks. STRIDE-LM
+  (frameworks.md lines 42-66) supplies all 7 categories; the scenario''s strongest threats map to E (Elevation),
+  LM (Lateral Movement), I (Information Disclosure), T (Tampering), and D (DoS), which is why stride_categories
+  spans S-E plus LM. The Cloud-Native Threat Patterns section''s "Container & Orchestration" subsection
+  (frameworks.md lines 269-274: Container escape, Kubernetes RBAC over-permission, etcd access/secrets
+  exposure, Pod-to-pod network policy gaps, Container image supply chain) maps one-to-one onto MF1, MF3,
+  MF4, MF2, and MF6. The "Cross-Tenant Isolation" subsection (lines 250-254: shared resource exploitation,
+  noisy neighbor DoS, data isolation failures) grounds MF7 and the cross-tenant blast radius framing.
+  The "Cloud Metadata & Instance Services" subsection (lines 244-248: IMDS v1 SSRF to credential theft,
+  IMDS v2 bypass, instance profile over-permission) grounds MF5. Severity floors follow the OWASP Risk
+  Rating methodology and severity bands (frameworks.md lines 104-159): container escape on a shared kernel
+  with privileged pods is high likelihood (3-4, common tools, few preconditions per the 1-5 likelihood
+  table) x high impact (5: full node + cross-tenant compromise, CIA all HIGH per lines 381-385) -> CRITICAL
+  (>=17); the cluster-admin SA is similarly likelihood x impact CRITICAL. Missing NetworkPolicies, secret-at-rest,
+  IMDS, and supply-chain land HIGH (10-16); unenforced quota DoS is MEDIUM (6-11) since impact is operational/recoverable
+  not existential. Least-privilege, micro-segmentation, assume-breach, and verify-explicitly come from
+  the Zero Trust Assessment Criteria (frameworks.md lines 278-288), which the analysis must apply to east-west
+  traffic and the over-privileged SA. CWE selections (CWE-269/732 privilege/permission, CWE-312/200 data
+  exposure, CWE-918 SSRF, CWE-400/770 resource consumption) are all drawn from the CWE Groups by Architectural
+  Concern tables (frameworks.md lines 325-373) per the framework-ID verification rule (lines 439-446).
+  Threat actor profiles must include Malicious Insider and an external malicious-tenant analog (frameworks.md
+  lines 23-32). The dfd_layers expectation (L1-L4) follows mermaid-layers.md §6 scaling rules (lines 185-191:
+  6-20 components requires full 4-layer) and the L2/L3/L4 layer definitions (tenant namespace trust boundaries
+  in L2, RESTRICTED secret zones + encryption state in L3, risk colors + attack-path overlays in L4).
+  required_report_sections are the mandatory, non-conditional sections from report-template.md Sections
+  I-VIII plus XIII (lines 36-198, 273-283); X/XI are conditional on compliance/privacy files and so are
+  excluded. The Team-mode trigger is justified by SKILL.md lines 124-133 (K8s/IaC, multiple trust domains,
+  credentials at scale all force Team).'

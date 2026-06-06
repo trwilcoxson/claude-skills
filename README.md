@@ -22,6 +22,8 @@ Run a threat model on [target]
 
 **Dependencies:** Requires [claude-agents](https://github.com/trwilcoxson/claude-agents) for the specialist agent definitions. See the [architecture doc](https://github.com/trwilcoxson/claude-agents/blob/main/docs/ARCHITECTURE.md) for the full system design.
 
+**Evals & benchmarks:** [`skills/threat-model/evals/`](skills/threat-model/evals/) is a self-testing harness for the skill — a fixed set of graded cases (payment/PCI, microservices, agentic+RAG, serverless, multi-tenant K8s, plus trigger-negative and prompt-injection cases), a deterministic scorer, an HTML benchmark comparing the skill against a no-skill baseline (pass rate / time / tokens), and regression, outgrowth, and trigger-tuning tooling. This is meta-level evaluation of the skill itself, distinct from the in-run validation layer. See its [README](skills/threat-model/evals/README.md).
+
 ### `/python-quality` — Python Code Quality Pipeline
 
 > **Design philosophy:** LLMs approximate pattern matching and produce different results each run. Static analysis tools (`ruff`, `mypy`, `pytest`, `pip-audit`) produce verified, deterministic output. This skill runs deterministic tools first, then hands the results to the LLM for prioritization and reasoning.

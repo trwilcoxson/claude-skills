@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/trwilcoxson/claude-skills/threat-model/evals/case.schema.json",
+  "title": "Threat-model eval case",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "title", "category", "trigger_phrase", "prompt", "expected", "rubric", "pass_threshold", "grounding"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "title": { "type": "string" },
+    "category": { "enum": ["positive", "trigger-negative", "injection-resilience"] },
+    "trigger_phrase": { "type": "string", "description": "short phrase a user might type that this case represents" },
+    "prompt": { "type": "string", "description": "the full user input fed to the skill" },
+    "expected": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["must_trigger", "dfd_layers", "stride_categories", "must_find_threats", "top_risk_candidates", "required_report_sections"],
+      "properties": {
+        "must_trigger": { "type": "boolean", "description": "whether the skill should activate at all" },
+        "dfd_layers": { "type": "array", "items": { "enum": ["L1", "L2", "L3", "L4"] } },
+        "stride_categories": { "type": "array", "items": { "enum": ["S", "T", "R", "I", "D", "E", "LM"] } },
+        "must_find_threats": {
+          "type": "array",
+          "description": "threats a correct model must surface; a missed CRITICAL fails the case",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "description", "stride", "min_severity"],
+            "properties": {
+              "id": { "type": "string", "pattern": "^MF[0-9]+$" },
+              "description": { "type": "string" },
+              "stride": { "enum": ["S", "T", "R", "I", "D", "E", "LM", "N/A"] },
+              "min_severity": { "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL", "N/A"] }
+            }
+          }
+        },
+        "top_risk_candidates": { "type": "array", "items": { "type": "string" }, "description": "the #1 ranked finding should match one of these" },
+        "required_report_sections": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "rubric": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "criterion", "weight"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^R[0-9]+$" },
+          "criterion": { "type": "string" },
+          "weight": { "type": "integer", "minimum": 1, "maximum": 5 }
+        }
+      }
+    },
+    "pass_threshold": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+    "grounding": { "type": "string" }
+  }
+}

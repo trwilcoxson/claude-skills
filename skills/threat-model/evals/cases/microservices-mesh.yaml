@@ -1,0 +1,171 @@
+id: microservices-mesh
+title: 'Threat Model: 12-Service Istio Mesh with Inconsistent mTLS, Shared Postgres, Kafka, Redis, and
+  Public GraphQL'
+category: positive
+trigger_phrase: threat model our microservices deployment / security architecture review of the mesh
+prompt: |-
+  We need a security architecture review / threat model of our microservices platform before our next compliance audit. Here is the architecture:
+
+  - Public traffic enters through an API gateway (Kong) terminating TLS at the edge, fronting a public GraphQL endpoint (Apollo) plus a few REST routes. GraphQL introspection is currently enabled in production and there is no query depth/complexity limit.
+  - 12 services run on Kubernetes (EKS) inside an Istio service mesh. Services call each other east-west constantly (orders -> payments -> ledger, catalog -> search, etc.).
+  - Inter-service auth is inconsistent: about half the services enforce mTLS via Istio PeerAuthentication in STRICT mode; the rest were onboarded fast and run in PERMISSIVE mode, so plaintext calls are accepted. There is no Istio AuthorizationPolicy on most services, so any pod that can reach a service is allowed to call it.
+  - A single shared PostgreSQL (RDS) instance backs most services; every service uses the same DB credentials pulled from one Kubernetes Secret. Order/payment tables hold customer PII and partial card data (last4 + billing address).
+  - A Kafka event bus carries domain events (order.created, payment.authorized) between services. Topics have no ACLs; any service with a broker connection can produce or consume any topic.
+  - A Redis cache (ElastiCache) holds session tokens and cached query results; it has no AUTH password and is reachable from the whole cluster.
+  - Secrets are Kubernetes Secrets (base64, not encrypted at rest with a KMS key). CI/CD (GitHub Actions) deploys via a long-lived kubeconfig with cluster-admin.
+
+  Please produce a full threat model with diagrams and prioritized findings.
+expected:
+  must_trigger: true
+  dfd_layers:
+  - L1
+  - L2
+  - L3
+  - L4
+  stride_categories:
+  - S
+  - T
+  - R
+  - I
+  - D
+  - E
+  - LM
+  must_find_threats:
+  - id: MF1
+    description: 'Inconsistent inter-service auth (PERMISSIVE mTLS + missing Istio AuthorizationPolicy)
+      lets a compromised or rogue pod spoof/call any east-west service and pivot laterally across the
+      mesh with no per-call authorization. This zero-trust failure (network position = trust) is the central
+      mesh risk and should rank at or near #1.'
+    stride: LM
+    min_severity: HIGH
+  - id: MF2
+    description: Shared single PostgreSQL credential in one Kubernetes Secret used by all 12 services
+      means compromise of any one service yields full read/write to customer PII and partial card data
+      across every service's tables — no data isolation, blast radius = entire datastore. PII/PAN-at-rest
+      exposure.
+    stride: I
+    min_severity: HIGH
+  - id: MF3
+    description: Public GraphQL endpoint with introspection enabled in production and no query depth/complexity/cost
+      limits enables schema disclosure plus resource-exhaustion DoS via deeply nested or batched queries.
+    stride: D
+    min_severity: HIGH
+  - id: MF4
+    description: Redis cache holding session tokens has no AUTH and is reachable cluster-wide; any pod
+      can read/overwrite session tokens enabling session hijacking/spoofing and tampering of cached results.
+    stride: S
+    min_severity: HIGH
+  - id: MF5
+    description: Kafka topics have no ACLs, so any service with broker access can produce forged domain
+      events (e.g. payment.authorized) or consume sensitive events — event injection/tampering driving
+      downstream business-logic abuse and information disclosure.
+    stride: T
+    min_severity: HIGH
+  - id: MF6
+    description: CI/CD (GitHub Actions) deploys with a long-lived cluster-admin kubeconfig; theft of that
+      credential (or supply-chain compromise of the pipeline) yields full cluster takeover — elevation
+      of privilege / supply chain.
+    stride: E
+    min_severity: HIGH
+  required_report_sections:
+  - I. Executive Summary
+  - II. System Overview
+  - III. Architecture Diagram
+  - IV. Risk Overlay Diagram
+  - V. Asset Inventory
+  - VI. Threat Actor Profiles
+  - VII. Findings
+  - VIII. Remediation Roadmap
+  - XII. Positive Observations
+  - XIII. Assumptions & Limitations
+  top_risk_candidates:
+  - Inconsistent inter-service auth / PERMISSIVE mTLS + missing AuthorizationPolicy enabling lateral movement
+    across the mesh (MF1)
+  - Shared single Postgres credential exposing all PII/partial-card data on any single-service compromise
+    (MF2)
+  - Unauthenticated cluster-wide Redis holding session tokens (MF4)
+  - Public GraphQL introspection + no depth/cost limit (MF3)
+rubric:
+- id: R1
+  criterion: Produces a 4-layer Mermaid DFD set (L1 Architecture, L2 Trust & Identity, L3 Data, L4 Threat
+    Overlay) with the mesh trust boundary drawn in L2 and the PII/partial-card data zone drawn in L3;
+    the 12 services, Kong gateway, GraphQL endpoint, shared Postgres, Kafka, and Redis all appear as nodes
+    with consistent IDs across layers (this is a medium system of 6-20 components requiring full 4-layer
+    per mermaid-layers §6).
+  weight: 4
+- id: R2
+  criterion: 'Flags the inconsistent inter-service auth (PERMISSIVE mTLS + missing Istio AuthorizationPolicy)
+    as a Lateral Movement (LM) threat rated HIGH or CRITICAL, explicitly framed as a zero-trust violation
+    (network position treated as trust), with a concrete attack path showing pivot from one compromised
+    pod to other east-west services. This finding ranks #1 or #2.'
+  weight: 5
+- id: R3
+  criterion: Identifies the shared single Postgres credential / no data isolation as Information Disclosure
+    (and/or Tampering) rated HIGH or CRITICAL, explicitly noting the blast radius (compromise of any service
+    exposes customer PII and partial card data across all services' tables) and that the secret is in
+    a non-KMS-encrypted Kubernetes Secret.
+  weight: 5
+- id: R4
+  criterion: Surfaces at least THREE of the remaining scenario-specific threats — public GraphQL introspection
+    + no depth/cost limit (DoS), unauthenticated cluster-wide Redis holding session tokens (Spoofing/session
+    hijack), missing Kafka topic ACLs (Tampering/event injection), and long-lived cluster-admin CI/CD
+    kubeconfig (Elevation/supply chain) — each tagged with the correct STRIDE-LM letter and rated MEDIUM
+    or higher.
+  weight: 4
+- id: R5
+  criterion: Scores every finding with OWASP Risk Rating (Likelihood 1-5 x Impact 1-5) mapped to the correct
+    severity band (LOW 1-4 / MEDIUM 5-9 / HIGH 10-16 / CRITICAL 17-25), backed by a PASTA-style attack
+    path and at least one named threat actor (e.g. malicious insider, organized crime, opportunistic external)
+    from the Phase 1 actor profiles.
+  weight: 3
+- id: R6
+  criterion: 'Cross-framework tagging is present and not hallucinated: findings carry CWE IDs drawn from
+    the reference set (e.g. CWE-306/CWE-862 missing auth/authz for the mesh and Redis, CWE-200/CWE-311/CWE-312
+    for PII and unencrypted secrets, CWE-400/CWE-770 for GraphQL DoS, CWE-269 for cluster-admin) and OWASP
+    API Top 10 / Top 10 categories (e.g. API4 Unrestricted Resource Consumption for GraphQL, API2/API5
+    broken auth/function-level authz, A05 misconfiguration). No CWE or MITRE ID outside the reference
+    tables.'
+  weight: 3
+- id: R7
+  criterion: Report includes the required template sections — Executive Summary with posture rating and
+    severity counts, System Overview, both diagram sections (III structural + IV risk overlay), Asset
+    Inventory classifying PII/partial-card data as CONFIDENTIAL/RESTRICTED, Threat Actor Profiles, Findings
+    in TM-NNN format ordered by severity, a Remediation Roadmap with waves, Positive Observations, and
+    Assumptions & Limitations.
+  weight: 3
+- id: R8
+  criterion: Each finding carries a concrete, scenario-specific remediation (e.g. move all services to
+    STRICT mTLS + default-deny Istio AuthorizationPolicy per service; per-service DB credentials + least-privilege
+    grants + KMS-encrypted secrets; disable GraphQL introspection in prod + depth/complexity limits; enable
+    Redis AUTH + TLS + network policy; Kafka topic ACLs; replace long-lived cluster-admin kubeconfig with
+    short-lived OIDC/IRSA scoped deploy role), not generic boilerplate.
+  weight: 3
+pass_threshold: 0.8
+grounding: 'Expectations are grounded in the threat-model skill''s own frameworks. (1) Layer requirement:
+  mermaid-layers.md §6 mandates full 4-layer (L1-L4) for medium systems of 6-20 components; this scenario
+  has ~17 nodes (12 services + Kong + GraphQL + Postgres + Kafka + Redis), so L1/L2/L3/L4 are required
+  (R1), with the mesh trust boundary in L2 and the PII/partial-card zone in L3 per the layer definitions.
+  (2) STRIDE-LM (frameworks.md §STRIDE-LM): the inconsistent mesh auth maps directly to Lateral Movement
+  (''pivot from this component to other parts of the system through network access, credential reuse,
+  trust exploitation'') and is reinforced by the Zero Trust Assessment Criteria (''Does every service-to-service
+  call authenticate the caller? Are requests authorized based on identity, not network position?'') —
+  making MF1 the canonical #1 (R2). The shared single DB credential is Information Disclosure / Tampering
+  with HIGH CIA-Confidentiality per the CIA Impact Matrix (''Restricted/regulated data exposed (PII...
+  financial)'') and the Cloud-Native ''Cross-Tenant Isolation / data isolation failures in shared storage''
+  pattern (R3, MF2). GraphQL introspection + no depth limit is taken verbatim from API Security Depth
+  > GraphQL (''Introspection in production'', ''Deep nesting / circular query DoS'', ''Batching attacks'')
+  and OWASP API4:2023 Unrestricted Resource Consumption -> Denial of Service (R4 MF3). Unauthenticated
+  Redis with session tokens is Spoofing (session hijack via stolen tokens) and Information Disclosure,
+  CWE-306 Missing Authentication for Critical Function (R4 MF4). Missing Kafka ACLs is Tampering via event
+  injection (frameworks WebSocket/messaging analog + Insecure Design A04) (R4 MF5). Long-lived cluster-admin
+  CI/CD kubeconfig maps to Elevation of Privilege and Supply Chain Attacker profile + MITRE T1195/T1078
+  + Container & Orchestration ''Kubernetes RBAC over-permission'' (R4/R5 MF6). (3) OWASP Risk Rating (frameworks.md):
+  Risk = Likelihood x Impact with bands LOW 1-4 / MEDIUM 5-9 / HIGH 10-16 / CRITICAL 17-25 drives R5;
+  HIGH min-severities are justified because most of these are achievable with moderate skill (likelihood
+  3-4) against RESTRICTED data (impact 4-5). (4) PASTA Stages 6-7 (frameworks.md) require the attack path
+  + business-impact backing for scores, and Phase 1 Threat Actor Profiles feed likelihood (R5). (5) CWE/OWASP
+  tagging must use only the reference tables and is verified in Phase 6 Framework ID Verification (R6).
+  (6) Report sections are the exact mandatory headings I-XIV from report-template.md, with the conditional
+  Compliance (X) and Privacy (XI) sections omittable, hence the required-sections list excludes those
+  two while keeping I, II, III, IV, V, VI, VII, VIII, XII, XIII (R7). (7) SKILL.md Guidelines require
+  every finding to include a concrete remediation step, grounding R8.'
