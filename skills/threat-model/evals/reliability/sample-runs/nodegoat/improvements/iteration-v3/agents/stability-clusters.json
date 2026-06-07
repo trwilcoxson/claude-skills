@@ -1,0 +1,207 @@
+{
+  "clusters": [
+    {
+      "label": "Server-Side JavaScript injection via eval() of contribution inputs",
+      "severity": "CRITICAL",
+      "runs": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "label": "NoSQL JavaScript injection via $where in allocations threshold",
+      "severity": "CRITICAL",
+      "runs": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "label": "Plaintext password storage and string-equality credential comparison",
+      "severity": "CRITICAL",
+      "runs": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "label": "Stored XSS via markdown memos rendered to all users",
+      "severity": "CRITICAL",
+      "runs": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "label": "Stored/Reflected XSS via disabled template autoescaping (profile fields)",
+      "severity": "CRITICAL",
+      "runs": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "label": "Default/hardcoded seeded credentials",
+      "severity": "CRITICAL",
+      "runs": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "label": "Server-Side Request Forgery via research url parameter",
+      "severity": "HIGH",
+      "runs": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "label": "Insecure session cookie/store configuration (no httpOnly/secure, missing headers)",
+      "severity": "HIGH",
+      "runs": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "label": "Application served over plaintext HTTP (no TLS)",
+      "severity": "HIGH",
+      "runs": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "label": "Missing CSRF protection on state-changing endpoints",
+      "severity": "HIGH",
+      "runs": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "label": "Committed TLS private key and certificate in repository",
+      "severity": "HIGH",
+      "runs": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "label": "IDOR on allocations (userId from URL)",
+      "severity": "HIGH",
+      "runs": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "label": "Missing function-level access control on admin Benefits",
+      "severity": "HIGH",
+      "runs": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "label": "ReDoS via catastrophic-backtracking bankRouting regex",
+      "severity": "HIGH",
+      "runs": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "label": "Sensitive PII (SSN, DOB, bank) stored unencrypted at rest",
+      "severity": "HIGH",
+      "runs": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "label": "Outdated/EOL dependencies (supply-chain exposure)",
+      "severity": "HIGH",
+      "runs": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "label": "MongoDB reachable without authentication",
+      "severity": "HIGH",
+      "runs": [
+        1,
+        2
+      ]
+    },
+    {
+      "label": "Hardcoded application secrets (cookie secret, crypto key)",
+      "severity": "HIGH",
+      "runs": [
+        1,
+        2
+      ]
+    },
+    {
+      "label": "Weak password policy permits trivial passwords",
+      "severity": "HIGH",
+      "runs": [
+        1,
+        2
+      ]
+    },
+    {
+      "label": "Missing session regeneration on login enables session fixation",
+      "severity": "HIGH",
+      "runs": [
+        1
+      ]
+    },
+    {
+      "label": "No rate limiting or lockout on authentication and APIs",
+      "severity": "HIGH",
+      "runs": [
+        1
+      ]
+    },
+    {
+      "label": "Missing security HTTP headers (helmet disabled)",
+      "severity": "HIGH",
+      "runs": [
+        3
+      ]
+    },
+    {
+      "label": "Open redirect in /learn link handler",
+      "severity": "HIGH",
+      "runs": [
+        3
+      ]
+    },
+    {
+      "label": "Operator/object injection on login via untyped request body",
+      "severity": "HIGH",
+      "runs": [
+        2
+      ]
+    }
+  ]
+}
