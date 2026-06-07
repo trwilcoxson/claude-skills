@@ -418,6 +418,17 @@ Consult [references/mermaid-spec.md](references/mermaid-spec.md) for symbol taxo
 
 Output each layer diagram in a fenced code block with `mermaid` language tag. Use filename convention: `{name}-L{N}-{layer}.mmd`.
 
+### Diagram acceptance gate (blocking)
+Do NOT finalize the diagrams until every item holds — a diagram that misses these is incomplete, not a stylistic choice. Re-do it before moving on:
+- **Layers present per scaling** — ≤5 components → L1+L4; 6-20 → L1, L2, L3, L4; >20 → 4 layers + sub-diagrams. Each layer stamped `%% Version: ... | Layer: L{N}`.
+- **Every edge typed and annotated** (§4) — no bare arrows; each label carries protocol + sensitivity (`[PUBLIC|INTERNAL|CONFIDENTIAL|RESTRICTED]`) and, where it varies, `[ENC]`/`[PLAIN]`.
+- **Trust boundaries drawn** — L2 has subgraph zones enclosing the right components; every boundary in the asset inventory appears.
+- **Component metadata on nodes** — ownership markers (§7: `[team:]`/`[vendor:]`/`[managed]`/`[self-managed]`) plus tech on processes and data stores.
+- **L4 risk layer linked to findings** — risk classDefs applied, threat annotations (§5: `⚠ {STRIDE} · {L}×{I}={Score} {BAND}`, MITRE/CWE) on risk-bearing nodes, and the `TM-NNN` id present so each overlay risk traces to a finding in the report. Every HIGH+ finding's components appear, risk-colored, in L4.
+- **Legend + version stamp** on every diagram (§6).
+
+This gate is what the evals verify deterministically (`evals/reliability/diagram_checks.py`); a run that skips it fails diagram verification.
+
 **File Output**: Save to `{output_dir}/02-structural-diagram.md`.
 
 ## Phase 3 — Threat Identification

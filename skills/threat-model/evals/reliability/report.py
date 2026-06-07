@@ -36,11 +36,29 @@ def _contract(runs: list[dict]) -> str:
         rows += (f"<tr><td>run {i+1}</td><td>{_yn(sc['structure_pass'])}</td>"
                  f"<td>{_yn(sc['consistency_pass'])}</td><td class='num'>{_pct(sc['grounding'])}</td>"
                  f"<td class='num'>{_pct(sc['coverage'])}</td>"
+                 f"<td>{_yn(sc.get('diagram_pass'))}</td>"
                  f"<td class='num'>{st['findings']}</td>"
                  f"<td class='num'>{st['surface_covered']}/{st['surface_elements']}</td>"
                  f"<td class='num'>{len(r['defects'])}</td></tr>")
     return ("<table><thead><tr><th>Run</th><th>Structure</th><th>Consistency</th><th>Grounding</th>"
-            "<th>Coverage</th><th>Findings</th><th>Surface examined</th><th>Defects</th></tr></thead>"
+            "<th>Coverage</th><th>Diagram</th><th>Findings</th><th>Surface examined</th><th>Defects</th></tr></thead>"
+            f"<tbody>{rows}</tbody></table>")
+
+
+def _diagram(runs: list[dict]) -> str:
+    rows = ""
+    for i, r in enumerate(runs):
+        ds = r["stats"].get("diagram", {})
+        rows += (f"<tr><td>run {i+1}</td><td>{_e(ds.get('layers'))}</td>"
+                 f"<td class='num'>{_pct(ds.get('edges_annotated_frac'))}</td>"
+                 f"<td class='num'>{_pct(ds.get('ownership_frac'))}</td>"
+                 f"<td class='num'>{ds.get('subgraphs', '—')}</td>"
+                 f"<td>{'yes' if ds.get('l4_links_findings') else '<span class=bad>no</span>'}</td></tr>")
+    return ("<p>The diagram is verified against the skill's own spec: required layers (L1–L4 per scaling), "
+            "typed/annotated flows (§4), trust-boundary subgraphs, component ownership markers (§7), and an "
+            "L4 risk overlay linked to the findings (§5). Semantic correctness is left to the diagram judge.</p>"
+            "<table><thead><tr><th>Run</th><th>Layers present</th><th>Flows annotated</th>"
+            "<th>Component metadata</th><th>Trust-boundary subgraphs</th><th>L4→findings linked</th></tr></thead>"
             f"<tbody>{rows}</tbody></table>")
 
 
@@ -131,6 +149,8 @@ def render(target: dict, runs: list[dict], agents: dict, stability: dict | None,
 <h2>Deterministic contract (per run)</h2>
 <p>Reference-free: structure, internal consistency (<code>severity == band(L×I)</code>, counts, refs), grounding against the real repo, and coverage of the system's own discovered surface. Should hold on every run regardless of target.</p>
 {_contract(runs)}
+<h3>Diagram verification</h3>
+{_diagram(runs)}
 <h3>Defects</h3>
 {_defects(runs)}
 <h2>Reasoning quality (judged, sampled)</h2>

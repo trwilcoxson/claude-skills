@@ -1,5 +1,46 @@
 {
-  "defects": [],
+  "defects": [
+    {
+      "layer": "diagram",
+      "code": "missing-layers",
+      "detail": "system size 28 needs ['L1', 'L2', 'L3', 'L4']; missing ['L2', 'L3'] (present: ['L1', 'L4'])"
+    },
+    {
+      "layer": "diagram",
+      "code": "no-legend",
+      "detail": "no legend subgraph found (spec \u00a76 requires a legend)"
+    },
+    {
+      "layer": "diagram",
+      "code": "untyped-edges",
+      "detail": "23/31 edges have no label (spec \u00a74: every arrow MUST be typed)"
+    },
+    {
+      "layer": "diagram",
+      "code": "under-annotated-flows",
+      "detail": "only 0% of edges carry a sensitivity/type annotation ([CONFIDENTIAL]/[AUTH]/etc.); spec \u00a74 wants every flow annotated"
+    },
+    {
+      "layer": "diagram",
+      "code": "few-trust-boundaries",
+      "detail": "recon lists 6 trust boundaries but the diagram has 1 subgraph zone(s)"
+    },
+    {
+      "layer": "diagram",
+      "code": "sparse-component-metadata",
+      "detail": "only 0% of nodes carry ownership markers ([team:]/[vendor:]/[managed]); spec \u00a77 wants metadata on components"
+    },
+    {
+      "layer": "diagram",
+      "code": "risk-layer-not-linked",
+      "detail": "L4 overlay does not reference any TM-NNN finding id \u2014 risk layer not linked to the report's findings"
+    },
+    {
+      "layer": "diagram",
+      "code": "high-findings-not-on-overlay",
+      "detail": "18/30 HIGH+ finding components are absent from the L4 overlay"
+    }
+  ],
   "stats": {
     "findings": 25,
     "counts": {
@@ -14,12 +55,31 @@
     "grounded": 56,
     "ungrounded": 0,
     "cwe_ids": 43,
-    "mitre_ids": 25
+    "mitre_ids": 25,
+    "diagram": {
+      "blocks": 2,
+      "layers": [
+        "L1",
+        "L4"
+      ],
+      "size": 28,
+      "edges": 31,
+      "edges_annotated_frac": 0.0,
+      "nodes": 43,
+      "ownership_frac": 0.0,
+      "subgraphs": 1,
+      "l4_links_findings": false
+    }
   },
   "scores": {
     "structure_pass": true,
     "consistency_pass": true,
     "grounding": 1.0,
-    "coverage": 1.0
+    "coverage": 1.0,
+    "diagram_pass": false,
+    "required_layers_present": false,
+    "flows_annotated": 0.0,
+    "component_metadata": 0.0,
+    "risk_layer_linked": false
   }
 }

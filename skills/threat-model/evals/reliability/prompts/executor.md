@@ -19,8 +19,13 @@ the actual flow (reconnaissance over real code/IaC), not a paraphrase.
 3. Write **three** files to `{out_dir}`:
 
    **`report.md`** — the full threat model per the skill's report template (Executive Summary,
-   System Overview, Architecture diagram(s), Findings as `### [SEVERITY] TM-NNN: ...`,
-   Remediation, etc.). The human deliverable.
+   System Overview, the Mermaid DFD layers, Findings as `### [SEVERITY] TM-NNN: ...`, Remediation,
+   etc.). The human deliverable. The diagrams must satisfy the skill's **Diagram acceptance gate**
+   (SKILL.md, Phase 2): the layers required by system size (≤5 → L1+L4; 6-20 → L1-L4), each stamped
+   `%% Version: ... | Layer: L{N}`; every edge typed + annotated with protocol/sensitivity
+   (`[CONFIDENTIAL]` etc.) and `[ENC]`/`[PLAIN]`; trust-boundary subgraphs; ownership markers on
+   nodes (`[team:]`/`[vendor:]`/`[managed]`); and an L4 overlay with risk classes + threat
+   annotations whose `TM-NNN` ids match findings. A diagram missing these fails diagram verification.
 
    **`recon.json`** — the attack surface you discovered, every element carrying grounding
    evidence (a repo-relative path, glob, or literal source string that actually resolves in

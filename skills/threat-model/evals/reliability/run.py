@@ -38,7 +38,8 @@ def cmd_check(a) -> None:
     s = res["scores"]
     print(f"structure={'pass' if s['structure_pass'] else 'FAIL'} "
           f"consistency={'pass' if s['consistency_pass'] else 'FAIL'} "
-          f"grounding={s['grounding']} coverage={s['coverage']} defects={len(res['defects'])}")
+          f"grounding={s['grounding']} coverage={s['coverage']} "
+          f"diagram={'pass' if s.get('diagram_pass') else 'FAIL'} defects={len(res['defects'])}")
     for d in res["defects"]:
         print(f"  [{d['layer']}] {d['code']}: {d['detail']}")
 
@@ -80,7 +81,8 @@ def cmd_report(a) -> None:
         s = r["scores"]
         print(f"  run {i+1}: structure={'pass' if s['structure_pass'] else 'FAIL'} "
               f"consistency={'pass' if s['consistency_pass'] else 'FAIL'} "
-              f"grounding={s['grounding']} coverage={s['coverage']} defects={len(r['defects'])}")
+              f"grounding={s['grounding']} coverage={s['coverage']} "
+              f"diagram={'pass' if s.get('diagram_pass') else 'FAIL'} defects={len(r['defects'])}")
     if stab:
         print(f"  stability: stable core {stab['stable_core_count']}/{stab['total_distinct_core']} "
               f"(jaccard {stab['mean_pairwise_jaccard']})")

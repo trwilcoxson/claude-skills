@@ -1,5 +1,31 @@
 {
-  "defects": [],
+  "defects": [
+    {
+      "layer": "diagram",
+      "code": "missing-layers",
+      "detail": "system size 32 needs ['L1', 'L2', 'L3', 'L4']; missing ['L1', 'L2', 'L3', 'L4'] (present: none-tagged)"
+    },
+    {
+      "layer": "diagram",
+      "code": "no-version-stamp",
+      "detail": "no `%% Version:` stamp on any diagram (spec \u00a76)"
+    },
+    {
+      "layer": "diagram",
+      "code": "no-legend",
+      "detail": "no legend subgraph found (spec \u00a76 requires a legend)"
+    },
+    {
+      "layer": "diagram",
+      "code": "under-annotated-flows",
+      "detail": "only 0% of edges carry a sensitivity/type annotation ([CONFIDENTIAL]/[AUTH]/etc.); spec \u00a74 wants every flow annotated"
+    },
+    {
+      "layer": "diagram",
+      "code": "sparse-component-metadata",
+      "detail": "only 0% of nodes carry ownership markers ([team:]/[vendor:]/[managed]); spec \u00a77 wants metadata on components"
+    }
+  ],
   "stats": {
     "findings": 17,
     "counts": {
@@ -14,12 +40,28 @@
     "grounded": 52,
     "ungrounded": 0,
     "cwe_ids": 37,
-    "mitre_ids": 29
+    "mitre_ids": 29,
+    "diagram": {
+      "blocks": 2,
+      "layers": [],
+      "size": 32,
+      "edges": 20,
+      "edges_annotated_frac": 0.0,
+      "nodes": 31,
+      "ownership_frac": 0.0,
+      "subgraphs": 5,
+      "l4_links_findings": false
+    }
   },
   "scores": {
     "structure_pass": true,
     "consistency_pass": true,
     "grounding": 1.0,
-    "coverage": 1.0
+    "coverage": 1.0,
+    "diagram_pass": false,
+    "required_layers_present": false,
+    "flows_annotated": 0.0,
+    "component_metadata": 0.0,
+    "risk_layer_linked": false
   }
 }

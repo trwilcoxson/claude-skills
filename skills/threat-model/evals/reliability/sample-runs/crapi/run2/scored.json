@@ -1,5 +1,11 @@
 {
-  "defects": [],
+  "defects": [
+    {
+      "layer": "diagram",
+      "code": "no-diagram",
+      "detail": "report.md contains no ```mermaid diagram blocks"
+    }
+  ],
   "stats": {
     "findings": 28,
     "counts": {
@@ -14,12 +20,16 @@
     "grounded": 47,
     "ungrounded": 0,
     "cwe_ids": 73,
-    "mitre_ids": 44
+    "mitre_ids": 44,
+    "diagram": {
+      "blocks": 0
+    }
   },
   "scores": {
     "structure_pass": true,
     "consistency_pass": true,
     "grounding": 1.0,
-    "coverage": 1.0
+    "coverage": 1.0,
+    "diagram_pass": false
   }
 }

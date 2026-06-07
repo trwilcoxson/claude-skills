@@ -3,6 +3,13 @@
 Real runs of the reference-free harness on three different kinds of targets. No answer key was used
 for any of them; adding a target is a `targets/<id>.yaml` + a clone.
 
+> **Note:** diagram verification was added after these runs and re-scored against them — **all nine
+> runs fail the diagram spec** (missing layers, unannotated flows, no ownership markers, L4 not linked
+> to findings) even though they pass every other check. The per-target writeups' "contract 3/3" refers
+> to the structure/consistency/grounding/coverage layers that predate diagram verification. See
+> [`DIAGRAM-FINDING.md`](DIAGRAM-FINDING.md). The `reliability.html` files have been regenerated and now
+> show the `Diagram` column (FAIL).
+
 - **[`nodegoat/`](nodegoat/RELIABILITY.md)** — OWASP NodeGoat (Express + MongoDB web app). The
   baseline run plus a two-iteration improvement loop:
   [`nodegoat/improvements/LOOP-CLOSURE.md`](nodegoat/improvements/LOOP-CLOSURE.md) records which

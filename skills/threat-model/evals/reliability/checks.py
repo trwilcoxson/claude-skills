@@ -12,6 +12,8 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
+import diagram_checks
+
 STRIDE_LM = {"S", "T", "R", "I", "D", "E", "LM"}
 SEVERITIES = ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
 
@@ -100,11 +102,13 @@ def run_checks(run_dir: Path, repo: Path) -> dict[str, Any]:
     report = run_dir / "report.md"
 
     # ---- structure: report.md present + has the expected sections
+    raw_report = ""
     if not report.exists() or report.stat().st_size < 500:
         d.add("structure", "missing-report", "report.md absent or trivially short")
         report_text = ""
     else:
-        report_text = report.read_text().lower()
+        raw_report = report.read_text()
+        report_text = raw_report.lower()
         for sec in REPORT_SECTIONS:
             if sec not in report_text:
                 d.add("structure", "missing-section", f"report.md has no '{sec}' section")
@@ -191,6 +195,12 @@ def run_checks(run_dir: Path, repo: Path) -> dict[str, Any]:
         for s in sorted(uncovered):
             d.add("coverage", "uncovered-surface", f"surface '{s}' has no finding and is not marked no-issue")
 
+    # diagram verification (its own defect layer)
+    diag = diagram_checks.check(raw_report, recon, findings_doc)
+    d.items.extend(diag["defects"])
+
+    scores = _scores(d, grounded, ungrounded, surface_ids, covered, findings_doc)
+    scores.update(diag["scores"])
     return {
         "defects": d.items,
         "stats": {
@@ -203,8 +213,9 @@ def run_checks(run_dir: Path, repo: Path) -> dict[str, Any]:
             "ungrounded": ungrounded,
             "cwe_ids": cwe_total,
             "mitre_ids": mitre_total,
+            "diagram": diag["stats"],
         },
-        "scores": _scores(d, grounded, ungrounded, surface_ids, covered, findings_doc),
+        "scores": scores,
     }
 
 

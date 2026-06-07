@@ -24,6 +24,13 @@ see `schema/`). Everything below is derived from those plus the real repo.
 4. **Coverage** — every entry point / data store / trust boundary the system *itself* discovered is
    addressed by a finding or explicitly marked `no_issue_surface`. The denominator is the system's
    own recon, not a golden list.
+5. **Diagram** (`diagram_checks.py`) — the threat-model diagram is the core artifact, so it is
+   verified against the skill's own spec: required layers per scaling (L1-L4), every edge typed and
+   annotated (protocol / sensitivity / `[ENC|PLAIN]`, spec §4), trust-boundary subgraphs, component
+   ownership markers (§7), legend + version stamp (§6), and an L4 risk overlay linked to the findings
+   (risk classes + threat annotations whose `TM-NNN` ids match, every HIGH+ finding's components
+   present, §5). See [`sample-runs/DIAGRAM-FINDING.md`](sample-runs/DIAGRAM-FINDING.md) — adding this
+   caught that all earlier runs produced under-built diagrams while passing every other check.
 
 **Agent-judged (sampled, reference-free):**
 5a. **Quality** (`quality-judge`) — is each attack path sound against the real repo, and is severity
@@ -33,6 +40,9 @@ see `schema/`). Everything below is derived from those plus the real repo.
     uncovered, and material. This replaces hand-authored must-finds with gaps generated per target.
 5c. **Recon completeness** (`recon-auditor`) — compares recon to the real repo so the coverage
     denominator can't be gamed by a recon that skipped a subsystem.
+5d. **Diagram correctness** (`diagram-judge`) — beyond the deterministic presence checks, judges
+    whether trust boundaries are placed right, flow annotations are accurate, and the L4 risk layer
+    faithfully reflects the findings, against the real architecture.
 
 **Stability:** across the N runs, the HIGH+ "core" is matched semantically and we report how much of
 it is present in *every* run. Reliability = the crown jewels appear every time; breadth may vary.
