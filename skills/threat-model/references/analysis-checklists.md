@@ -22,6 +22,7 @@ Use these checklists to ensure thoroughness at each phase. Check off items as yo
 ### Code Scanning
 - [ ] Code scanning complete: entry points, auth, authz, data stores, integrations, IaC, network topology
 - [ ] Secret/artifact sweep run across the whole tree (committed keys/certs, seed/default credentials, hardcoded tokens/passwords) — each committed secret recorded as a finding
+- [ ] CI/CD and deployment surface enumerated (pipeline definitions, build scripts, deployment manifests) as a supply-chain trust boundary
 
 ### Inventories
 - [ ] Threat actor profiles: 3-5 actors spanning external and internal categories, each with type/motivation/capability/access/relevance
@@ -78,6 +79,7 @@ Identify threats ONLY in this phase. Do NOT assign likelihood, impact, or severi
 - [ ] All seven STRIDE-LM categories assessed for every component and data flow
 - [ ] AI/ML and agentic threats assessed (if applicable, otherwise N/A)
 - [ ] Persisted/user-controlled inputs traced to all sinks including cross-user and privileged (admin) render/exec contexts; stored/second-order and privilege-escalation chains considered
+- [ ] Injection sinks classified by type (SQL/NoSQL, command, template/SSTI, eval/deserialization, LDAP, header/redirect, log); operator/object injection from untyped structured input into query filters flagged
 
 ### Cross-Framework Classification
 - [ ] Cross-framework classification complete (MITRE, OWASP, CWE, CIA) using verified IDs only

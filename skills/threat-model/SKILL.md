@@ -371,6 +371,7 @@ Use Glob and Grep to discover:
 - Authentication and authorization: middleware, guards, decorators, policies, tokens
 - Configuration: environment variables, config files, secrets management
 - Infrastructure as Code: Terraform, CloudFormation, Kubernetes manifests, Docker files
+- CI/CD and deployment: pipeline definitions (`.github/workflows/`, `.gitlab-ci.yml`, `.travis.yml`, Jenkinsfile, build scripts) and deployment manifests (Procfile, app.json, Helm charts, `serverless.yml`) — enumerate the build/deploy pipeline as a supply-chain trust boundary, not just the runtime
 - Data schemas: database migrations, ORM models, protobuf/GraphQL/OpenAPI schemas
 - External integrations: HTTP clients, SDK usage, queue producers/consumers
 - Secrets and sensitive artifacts: committed private keys/certs (`*.pem`, `*.key`, `id_rsa`, `BEGIN PRIVATE KEY`), credentials in seed/migration/fixture/reset scripts, default or predictable accounts, and hardcoded tokens/passwords/API keys in source or config
@@ -442,6 +443,9 @@ Analyze race conditions, workflow bypass, state manipulation, and TOCTOU vulnera
 
 ### Persisted & Cross-Context Input Tracing
 For every user-controlled input that is stored, trace it to **all** render and execution sinks — not only the submitter's own view, but other users' pages, admin or privileged dashboards, exports, logs, and downstream consumers. Stored and second-order flows (stored XSS, stored SSTI, log/queue injection, second-order SQL/NoSQL) frequently escalate privilege when the payload later executes in a higher-privileged user's session. Model the cross-user and privileged-viewer path explicitly, not just the reflected or self-view case; a stored payload that fires in an admin's session is an account-takeover chain, not a self-inflicted issue.
+
+### Injection Sink Tracing
+Trace each user-controlled value to its sink and classify the injection class by sink type: SQL/NoSQL query, OS command, template (SSTI), `eval`/deserialization, LDAP, header/redirect, and log. Include **operator/object injection**: when untyped structured input (a parsed JSON body, a request-body object) reaches a query filter or builder, an attacker can inject query operators (e.g. a `{"$gt":""}` or `{"$regex":...}` object where a string was expected) even with no string concatenation — flag it as injection whenever the input type is not constrained before it reaches the query.
 
 ### Zero Trust Assessment
 Evaluate whether the system assumes network position equals trust. Flag implicit trust relationships between components that lack per-request authentication or authorization.
