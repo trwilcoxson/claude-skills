@@ -373,6 +373,9 @@ Use Glob and Grep to discover:
 - Infrastructure as Code: Terraform, CloudFormation, Kubernetes manifests, Docker files
 - Data schemas: database migrations, ORM models, protobuf/GraphQL/OpenAPI schemas
 - External integrations: HTTP clients, SDK usage, queue producers/consumers
+- Secrets and sensitive artifacts: committed private keys/certs (`*.pem`, `*.key`, `id_rsa`, `BEGIN PRIVATE KEY`), credentials in seed/migration/fixture/reset scripts, default or predictable accounts, and hardcoded tokens/passwords/API keys in source or config
+
+Run the secrets-and-artifacts item as an explicit sweep of the whole tree, not opportunistic reading: grep for the patterns above and for default/seed accounts regardless of which files you opened for other purposes. Every committed private key, certificate, or seed/default credential is a finding in its own right — this is the kind of issue that is reliably present in the code but easy to miss if it depends on attention.
 
 ### 1.4 Asset Inventory
 List every data asset with sensitivity classification (PUBLIC, INTERNAL, CONFIDENTIAL, RESTRICTED). Include data at rest, in transit, and in processing.
@@ -436,6 +439,9 @@ Evaluate against secure design principles (defense in depth, least privilege, fa
 
 ### Business Logic Threats
 Analyze race conditions, workflow bypass, state manipulation, and TOCTOU vulnerabilities.
+
+### Persisted & Cross-Context Input Tracing
+For every user-controlled input that is stored, trace it to **all** render and execution sinks — not only the submitter's own view, but other users' pages, admin or privileged dashboards, exports, logs, and downstream consumers. Stored and second-order flows (stored XSS, stored SSTI, log/queue injection, second-order SQL/NoSQL) frequently escalate privilege when the payload later executes in a higher-privileged user's session. Model the cross-user and privileged-viewer path explicitly, not just the reflected or self-view case; a stored payload that fires in an admin's session is an account-takeover chain, not a self-inflicted issue.
 
 ### Zero Trust Assessment
 Evaluate whether the system assumes network position equals trust. Flag implicit trust relationships between components that lack per-request authentication or authorization.
