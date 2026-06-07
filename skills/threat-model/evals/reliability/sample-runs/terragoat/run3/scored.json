@@ -18,7 +18,7 @@
     {
       "layer": "diagram",
       "code": "untyped-edges",
-      "detail": "12/14 edges have no label (spec \u00a74: every arrow MUST be typed)"
+      "detail": "12/14 edges unlabeled (>10%; spec \u00a74: every arrow MUST be typed)"
     },
     {
       "layer": "diagram",
@@ -27,8 +27,8 @@
     },
     {
       "layer": "diagram",
-      "code": "sparse-component-metadata",
-      "detail": "only 0% of nodes carry ownership markers ([team:]/[vendor:]/[managed]); spec \u00a77 wants metadata on components"
+      "code": "no-component-metadata",
+      "detail": "L1 components carry almost no ownership markers (0%); spec \u00a77"
     }
   ],
   "stats": {
@@ -52,10 +52,11 @@
       "size": 23,
       "edges": 14,
       "edges_annotated_frac": 0.0,
-      "nodes": 38,
+      "components": 12,
       "ownership_frac": 0.0,
       "subgraphs": 4,
-      "l4_links_findings": false
+      "l4_links_findings": false,
+      "warnings": []
     }
   },
   "scores": {

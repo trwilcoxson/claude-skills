@@ -1,0 +1,47 @@
+{
+  "defects": [],
+  "stats": {
+    "findings": 26,
+    "counts": {
+      "LOW": 0,
+      "MEDIUM": 4,
+      "HIGH": 15,
+      "CRITICAL": 7
+    },
+    "recon_elements": 55,
+    "surface_elements": 30,
+    "surface_covered": 30,
+    "grounded": 55,
+    "ungrounded": 0,
+    "cwe_ids": 53,
+    "mitre_ids": 43,
+    "diagram": {
+      "blocks": 4,
+      "layers": [
+        "L1",
+        "L2",
+        "L3",
+        "L4"
+      ],
+      "size": 23,
+      "edges": 79,
+      "edges_annotated_frac": 1.0,
+      "components": 19,
+      "ownership_frac": 0.895,
+      "subgraphs": 16,
+      "l4_links_findings": true,
+      "warnings": []
+    }
+  },
+  "scores": {
+    "structure_pass": true,
+    "consistency_pass": true,
+    "grounding": 1.0,
+    "coverage": 1.0,
+    "diagram_pass": true,
+    "required_layers_present": true,
+    "flows_annotated": 1.0,
+    "component_metadata": 0.895,
+    "risk_layer_linked": true
+  }
+}

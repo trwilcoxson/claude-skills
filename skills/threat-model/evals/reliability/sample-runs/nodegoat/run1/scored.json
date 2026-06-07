@@ -13,7 +13,7 @@
     {
       "layer": "diagram",
       "code": "untyped-edges",
-      "detail": "23/31 edges have no label (spec \u00a74: every arrow MUST be typed)"
+      "detail": "23/31 edges unlabeled (>10%; spec \u00a74: every arrow MUST be typed)"
     },
     {
       "layer": "diagram",
@@ -27,18 +27,13 @@
     },
     {
       "layer": "diagram",
-      "code": "sparse-component-metadata",
-      "detail": "only 0% of nodes carry ownership markers ([team:]/[vendor:]/[managed]); spec \u00a77 wants metadata on components"
+      "code": "no-component-metadata",
+      "detail": "L1 components carry almost no ownership markers (0%); spec \u00a77"
     },
     {
       "layer": "diagram",
       "code": "risk-layer-not-linked",
-      "detail": "L4 overlay does not reference any TM-NNN finding id \u2014 risk layer not linked to the report's findings"
-    },
-    {
-      "layer": "diagram",
-      "code": "high-findings-not-on-overlay",
-      "detail": "18/30 HIGH+ finding components are absent from the L4 overlay"
+      "detail": "L4 overlay references no TM-NNN finding id \u2014 risk layer not linked to findings"
     }
   ],
   "stats": {
@@ -65,10 +60,11 @@
       "size": 28,
       "edges": 31,
       "edges_annotated_frac": 0.0,
-      "nodes": 43,
+      "components": 25,
       "ownership_frac": 0.0,
       "subgraphs": 1,
-      "l4_links_findings": false
+      "l4_links_findings": false,
+      "warnings": []
     }
   },
   "scores": {

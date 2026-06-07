@@ -32,6 +32,12 @@ Semantic correctness (are boundaries placed right, are annotations accurate) is 
 ## Response
 
 The skill gained a blocking **Diagram acceptance gate** (SKILL.md, Phase 2) restating these as
-must-haves before a diagram is finalized, and the eval executor now requires it. The next run is the
-loop closure: diagrams should pass verification. Until a run does, these committed runs stand as the
-honest baseline — strong on analysis, weak on the diagram artifact.
+must-haves before a diagram is finalized, and the eval executor now requires it.
+
+**Loop closed** ([`nodegoat/improvements/iteration-v4-diagram/`](nodegoat/improvements/iteration-v4-diagram/NOTE.md)):
+re-running NodeGoat against the gated skill produced diagrams that **pass verification on all 3 runs**
+— all four layers, 93–100% annotated flows, ~88% component ownership markers, 11–16 trust-boundary
+subgraphs, and an L4 overlay linked to 17/17 HIGH+ findings. Two deterministic sub-checks were also
+corrected (L4 linkage now matches on `TM-NNN` not component ids; ownership measured on L1 components,
+not all layers) — the baseline runs above still FAIL afterward, so the fixes were bugs, not
+rubber-stamping. These baseline runs stand as the honest before-state.

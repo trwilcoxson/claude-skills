@@ -17,11 +17,6 @@
     },
     {
       "layer": "diagram",
-      "code": "untyped-edges",
-      "detail": "2/26 edges have no label (spec \u00a74: every arrow MUST be typed)"
-    },
-    {
-      "layer": "diagram",
       "code": "under-annotated-flows",
       "detail": "only 42% of edges carry a sensitivity/type annotation ([CONFIDENTIAL]/[AUTH]/etc.); spec \u00a74 wants every flow annotated"
     },
@@ -32,18 +27,13 @@
     },
     {
       "layer": "diagram",
-      "code": "sparse-component-metadata",
-      "detail": "only 0% of nodes carry ownership markers ([team:]/[vendor:]/[managed]); spec \u00a77 wants metadata on components"
+      "code": "no-component-metadata",
+      "detail": "L1 components carry almost no ownership markers (0%); spec \u00a77"
     },
     {
       "layer": "diagram",
       "code": "risk-layer-not-linked",
-      "detail": "L4 overlay does not reference any TM-NNN finding id \u2014 risk layer not linked to the report's findings"
-    },
-    {
-      "layer": "diagram",
-      "code": "high-findings-not-on-overlay",
-      "detail": "15/15 HIGH+ finding components are absent from the L4 overlay"
+      "detail": "L4 overlay references no TM-NNN finding id \u2014 risk layer not linked to findings"
     }
   ],
   "stats": {
@@ -70,10 +60,13 @@
       "size": 15,
       "edges": 26,
       "edges_annotated_frac": 0.423,
-      "nodes": 35,
+      "components": 11,
       "ownership_frac": 0.0,
       "subgraphs": 0,
-      "l4_links_findings": false
+      "l4_links_findings": false,
+      "warnings": [
+        "2/26 edges unlabeled (spec \u00a74 wants every arrow typed)"
+      ]
     }
   },
   "scores": {

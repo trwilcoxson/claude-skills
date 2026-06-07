@@ -1,0 +1,49 @@
+{
+  "defects": [],
+  "stats": {
+    "findings": 26,
+    "counts": {
+      "LOW": 1,
+      "MEDIUM": 8,
+      "HIGH": 9,
+      "CRITICAL": 8
+    },
+    "recon_elements": 49,
+    "surface_elements": 25,
+    "surface_covered": 24,
+    "grounded": 49,
+    "ungrounded": 0,
+    "cwe_ids": 47,
+    "mitre_ids": 43,
+    "diagram": {
+      "blocks": 4,
+      "layers": [
+        "L1",
+        "L2",
+        "L3",
+        "L4"
+      ],
+      "size": 22,
+      "edges": 61,
+      "edges_annotated_frac": 0.934,
+      "components": 17,
+      "ownership_frac": 0.882,
+      "subgraphs": 15,
+      "l4_links_findings": true,
+      "warnings": [
+        "1/61 edges unlabeled (spec \u00a74 wants every arrow typed)"
+      ]
+    }
+  },
+  "scores": {
+    "structure_pass": true,
+    "consistency_pass": true,
+    "grounding": 1.0,
+    "coverage": 1.0,
+    "diagram_pass": true,
+    "required_layers_present": true,
+    "flows_annotated": 0.934,
+    "component_metadata": 0.882,
+    "risk_layer_linked": true
+  }
+}
