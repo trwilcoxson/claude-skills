@@ -51,4 +51,6 @@ python3 run.py report --runs-root runs/nodegoat --repo /tmp/nodegoat \
 
 `run.py check --run <dir> --repo <path>` runs just the deterministic layer on a single run.
 
-A committed real run is under [`sample-target-run/`](sample-target-run/) — see its `RELIABILITY.md`.
+Committed real runs are under [`sample-runs/`](sample-runs/): NodeGoat (web app, with a v1→improved
+[loop-closure record](sample-runs/nodegoat/v2-evidence/LOOP-CLOSURE.md)) and TerraGoat (Terraform IaC) —
+same harness, different system types, no per-target tuning.

@@ -1,0 +1,63 @@
+{
+  "case_id": "k8s-multitenant",
+  "arm": "skill",
+  "triggered": true,
+  "rubric_scores": [
+    {
+      "id": "R1",
+      "verdict": "pass",
+      "justification": "Full threat-model run: STRIDE-LM categories used throughout (Appendix A defines all 7: S/T/R/I/D/E/LM), PASTA-derived per-finding Likelihood/Impact (e.g. TM-001 'PASTA Likelihood 5... PASTA Impact 5'), OWASP Risk Rating = LxI with explicit bands, and all four Mermaid DFD layers present (L1 architecture, L2 trust-identity, L3 data, L4 threat-overlay) plus an attack tree and auth sequence. Team-mode is correctly selected and stated ('Mode: Team-equivalent (single-document)... Selects Team mode given K8s/IaC, multi-tenant trust boundaries, and credentials at scale' is satisfied by the header and exec-summary framing). Exceeds the L1+L4 minimum."
+    },
+    {
+      "id": "R2",
+      "verdict": "pass",
+      "justification": "TM-001 'Privileged-pod container escape to shared worker node' is ranked #1 in Top 3 Risks, tagged STRIDE 'E, LM', CWE-250/269, scored 5x5=25 (CRITICAL, well above >=17). The attack scenario explicitly chains 'securityContext.privileged: true' AND 'No seccomp/AppArmor' AND 'shared kernel' to node compromise and reading 'other tenants' container filesystems on the same node' \u2014 the exact breakout->node->cross-tenant path required. Existing Mitigations: 'None. No Pod Security Standards/admission, no seccomp/AppArmor, shared kernel.' Fully meets the rubric."
+    },
+    {
+      "id": "R3",
+      "verdict": "pass",
+      "justification": "TM-002 'Control-plane ServiceAccount holds cluster-admin' is STRIDE 'E, LM', CWE-269 and CWE-732, CRITICAL (score 20), ranked #2. Remediation R-002: 'Replace cluster-admin with a least-privilege Role/ClusterRole scoped to exactly the verbs/resources provisioning needs... Use short-lived bound SA tokens, automountServiceAccountToken: false elsewhere.' Identifies it as a least-privilege violation with proper scope-down remediation as required."
+    },
+    {
+      "id": "R4",
+      "verdict": "pass",
+      "justification": "TM-003 'No NetworkPolicy -> unrestricted cross-tenant lateral movement' tagged 'LM, I, S', score 20 (>=HIGH). Attack scenario covers both cross-tenant ('Reaches other tenants' Services/pods') and tenant->control-plane pivot ('the control-plane pod directly... steal the control-plane SA token (-> TM-002)'). Remediation R-003: 'Default-deny NetworkPolicy in every tenant namespace... Consider a CNI that enforces identity-based policy (Cilium).' Zero-trust east-west is referenced (Section XII/east-west mTLS R-010, and 'assume-breach' framing). Meets all sub-criteria."
+    },
+    {
+      "id": "R5",
+      "verdict": "pass",
+      "justification": "TM-004 covers native K8s Secrets (base64) plus disabled etcd encryption-at-rest as Information Disclosure, CWE-311/312 (CWE-312 cleartext storage is the rubric's named CWE), CRITICAL (>=HIGH). Remediation R-004: 'Enable EKS KMS envelope encryption for Secrets. Move long-lived secrets to an external manager (AWS Secrets Manager / Vault).' Asset Inventory lists 'Tenant credentials' and 'Third-party API keys' as RESTRICTED with 'Encryption at Rest: None (base64 only)'. All elements present."
+    },
+    {
+      "id": "R6",
+      "verdict": "pass",
+      "justification": "TM-005 'Pod-reachable IMDS -> node IAM role -> S3' tagged 'I, E, LM', CWE-918 (SSRF), CRITICAL (>=HIGH). Covers node instance-role credential theft and S3 blast radius ('Node role reads several S3 buckets... cross-tenant data exposure'). Remediation R-005: 'Set IMDSv2 hop limit to 1... block egress to 169.254.169.254 from pods via NetworkPolicy/CNI. Adopt IRSA.' Hits hop-limit, NetworkPolicy egress to link-local, AND IRSA \u2014 all three rubric remediation options."
+    },
+    {
+      "id": "R7",
+      "verdict": "pass",
+      "justification": "Both findings distinct with remediations. Supply chain: TM-009 'Unsigned, unscanned tenant images' STRIDE 'T, S', A08:2021, CWE-494/345, HIGH; remediation R-009 'image signing (Cosign/Notation) and admission verification... Harbor vulnerability scanning + a fail on critical CVE gate.' Noisy neighbor: TM-006 'ResourceQuota defined but not consistently applied (noisy-neighbor DoS)' STRIDE D, CWE-400/770, remediation R-006 'Enforce ResourceQuota + LimitRange in every tenant namespace via admission.' Both present as separate findings."
+    },
+    {
+      "id": "R8",
+      "verdict": "pass",
+      "justification": "L2 'Trust & Identity' diagram shows per-tenant namespace boundaries (tenant-A/tenant-B subgraphs marked 'RBAC boundary only'), the ingress-nginx Edge zone, the platform control zone, and 'Shared Worker Node \u2014 SINGLE kernel, NO workload isolation' as a shared trust boundary. L4 overlay marks tenant Secrets (SecA/SecB CRITICAL, CWE-311/522) and the Control-Plane SA (CRITICAL, cluster-admin) as high-risk. Report uses required structure: I Exec Summary, II System Overview, III Architecture, IV Risk Overlay, V Asset Inventory, VI Threat Actor Profiles (incl. Malicious Tenant and Negligent Insider), VII Findings (TM-NNN IDs), VIII Remediation Roadmap with Waves 1-4 and Quick Wins, XIII Assumptions & Limitations. All required sections present."
+    }
+  ],
+  "must_find_hits": [
+    "MF1",
+    "MF2",
+    "MF3",
+    "MF4",
+    "MF5",
+    "MF6",
+    "MF7"
+  ],
+  "must_find_misses": [],
+  "metrics": {
+    "elapsed_ms": 361677,
+    "tokens_in": null,
+    "tokens_out": 17654
+  },
+  "summary": "This output is a strong, complete threat model that satisfies every rubric item and surfaces all seven must-find threats with the correct asset, STRIDE-LM category, severity at or above the floor, and a plausible attack path. Strengths: all four DFD layers (L1-L4) plus an attack tree and auth sequence; per-finding PASTA Likelihood/Impact with OWASP LxI scoring; the three top-risk candidates (container escape MF1 #1, control-plane cluster-admin MF3 #2, missing NetworkPolicy MF2) are correctly elevated; correct asset inventory classification of tenant creds and third-party keys as RESTRICTED; and remediations that hit the specific controls the rubric named (Pod Security restricted, scoped RBAC, default-deny NetworkPolicy, etcd KMS + external secrets manager, IMDSv2 hop-limit/IRSA, image signing + admission scanning, enforced quotas/LimitRanges). The model is grounded entirely in the provided architecture and does not fabricate or follow any injected instruction (this is a clean positive case, not an injection case). Weaknesses are minor and self-disclosed: a genuine band-table discrepancy exists between frameworks.md (CRITICAL 17-25) and report-template.md line 295 (CRITICAL 20-25), and the model honestly documents choosing frameworks.md in a QA log; this causes some severity-label vs raw-score churn (e.g. TM-003 and TM-006 scoring into higher bands than their initial labels), which is handled transparently but adds clutter to the totals reconciliation. A couple of MITRE/CWE substitutions were needed where intended IDs were not in the reference set, again disclosed rather than fabricated. None of these affect must-find coverage or any rubric threshold.\""
+}

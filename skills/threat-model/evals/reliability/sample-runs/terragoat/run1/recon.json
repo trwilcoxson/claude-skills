@@ -1,0 +1,59 @@
+{
+  "system_name": "TerraGoat AWS Terraform Module",
+  "components": [
+    {"id": "C1", "name": "web_host EC2 instance (Apache)", "evidence": ["ec2.tf"]},
+    {"id": "C2", "name": "db_app EC2 instance (Apache/PHP front-end)", "evidence": ["db-app.tf"]},
+    {"id": "C3", "name": "aws_db_instance.default MySQL RDS", "evidence": ["db-app.tf"]},
+    {"id": "C4", "name": "RDS Aurora clusters app1-app9", "evidence": ["rds.tf"]},
+    {"id": "C5", "name": "aws_neptune_cluster graph database", "evidence": ["neptune.tf"]},
+    {"id": "C6", "name": "aws_elasticsearch_domain monitoring-framework", "evidence": ["es.tf"]},
+    {"id": "C7", "name": "aws_eks_cluster eks_cluster", "evidence": ["eks.tf"]},
+    {"id": "C8", "name": "aws_lambda_function analysis_lambda", "evidence": ["lambda.tf"]},
+    {"id": "C9", "name": "aws_elb.weblb classic load balancer", "evidence": ["elb.tf"]},
+    {"id": "C10", "name": "aws_ecr_repository container registry", "evidence": ["ecr.tf"]},
+    {"id": "C11", "name": "EC2 instance profile / ec2role IAM role", "evidence": ["db-app.tf"]},
+    {"id": "C12", "name": "aws_iam_user.user with access key", "evidence": ["iam.tf"]},
+    {"id": "C13", "name": "aws_kms_key.logs_key", "evidence": ["kms.tf"]},
+    {"id": "C14", "name": "web_vpc network (VPC/subnets/IGW/route table)", "evidence": ["ec2.tf"]},
+    {"id": "C15", "name": "eks_vpc network (VPC/subnets)", "evidence": ["eks.tf"]},
+    {"id": "C16", "name": "null_resource.push_image local-exec build/push", "evidence": ["ecr.tf"]},
+    {"id": "C17", "name": "AWS provider plain_text_access_keys_provider", "evidence": ["providers.tf"]}
+  ],
+  "data_stores": [
+    {"id": "D1", "name": "aws_s3_bucket.data (public, holds customer-master.xlsx)", "evidence": ["s3.tf", "resources/customer-master.xlsx"]},
+    {"id": "D2", "name": "aws_s3_bucket.financials", "evidence": ["s3.tf"]},
+    {"id": "D3", "name": "aws_s3_bucket.operations", "evidence": ["s3.tf"]},
+    {"id": "D4", "name": "aws_s3_bucket.data_science", "evidence": ["s3.tf"]},
+    {"id": "D5", "name": "aws_s3_bucket.logs (KMS-encrypted)", "evidence": ["s3.tf"]},
+    {"id": "D6", "name": "aws_s3_bucket.flowbucket VPC flow logs", "evidence": ["ec2.tf"]},
+    {"id": "D7", "name": "MySQL RDS data store (EMPLOYEES)", "evidence": ["db-app.tf"]},
+    {"id": "D8", "name": "Neptune graph data store", "evidence": ["neptune.tf"]},
+    {"id": "D9", "name": "Elasticsearch domain index/EBS storage", "evidence": ["es.tf"]},
+    {"id": "D10", "name": "aws_ebs_volume.web_host_storage + snapshot", "evidence": ["ec2.tf"]},
+    {"id": "D11", "name": "Terraform S3 remote state backend", "evidence": ["providers.tf"]}
+  ],
+  "entry_points": [
+    {"id": "E1", "name": "HTTP/SSH ingress 0.0.0.0/0 to web-node SG (ports 80, 22)", "evidence": ["ec2.tf"]},
+    {"id": "E2", "name": "Classic ELB HTTP listener :80 -> instance :8000", "evidence": ["elb.tf"]},
+    {"id": "E3", "name": "db_app PHP form POST (NAME/ADDRESS) over HTTP", "evidence": ["db-app.tf"]},
+    {"id": "E4", "name": "RDS MySQL publicly_accessible endpoint :3306", "evidence": ["db-app.tf"]},
+    {"id": "E5", "name": "Elasticsearch domain endpoint with Principal '*' access policy", "evidence": ["es.tf"]},
+    {"id": "E6", "name": "EKS cluster API endpoint", "evidence": ["eks.tf"]},
+    {"id": "E7", "name": "ECR repository pull/push endpoint", "evidence": ["ecr.tf"]},
+    {"id": "E8", "name": "Lambda function invoke surface (analysis_lambda)", "evidence": ["lambda.tf"]}
+  ],
+  "trust_boundaries": [
+    {"id": "TB1", "name": "Internet -> web_vpc public subnet edge (IGW)", "evidence": ["ec2.tf"]},
+    {"id": "TB2", "name": "Public subnet -> RDS security group (3306)", "evidence": ["db-app.tf"]},
+    {"id": "TB3", "name": "AWS account IAM boundary (roles, user, policies)", "evidence": ["iam.tf", "db-app.tf"]},
+    {"id": "TB4", "name": "eks_vpc cluster network boundary", "evidence": ["eks.tf"]},
+    {"id": "TB5", "name": "EC2 instance -> AWS control plane (instance profile credentials)", "evidence": ["db-app.tf"]}
+  ],
+  "external_deps": [
+    {"id": "X1", "name": "AWS provider / managed services", "evidence": ["providers.tf"]},
+    {"id": "X2", "name": "amazon-linux-2 AMI (data source) and var.ami AMI", "evidence": ["db-app.tf", "consts.tf"]},
+    {"id": "X3", "name": "Docker / docker.io build of python:3.7-slim base image", "evidence": ["ecr.tf", "resources/Dockerfile"]},
+    {"id": "X4", "name": "AWS managed policies AmazonEKSClusterPolicy / AmazonEKSServicePolicy", "evidence": ["eks.tf"]},
+    {"id": "X5", "name": "Lambda nodejs12.x runtime + lambda_function_payload.zip", "evidence": ["lambda.tf", "resources/lambda_function_payload.zip"]}
+  ]
+}

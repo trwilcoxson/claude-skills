@@ -22,7 +22,7 @@ Run a threat model on [target]
 
 **Dependencies:** Requires [claude-agents](https://github.com/trwilcoxson/claude-agents) for the specialist agent definitions. See the [architecture doc](https://github.com/trwilcoxson/claude-agents/blob/main/docs/ARCHITECTURE.md) for the full system design.
 
-**Evals:** [`skills/threat-model/evals/`](skills/threat-model/evals/) is a **reference-free reliability harness** — point the skill at any real repository and it checks reliability with no per-target answer key: deterministic structure / consistency (`severity == band(L×I)`) / grounding against the real repo / coverage of the system's own discovered surface, plus judged reasoning quality, adversarial recall (a red team finds what the model missed), recon completeness, and cross-run stability. A real run against OWASP NodeGoat is in [`reliability/sample-target-run/`](skills/threat-model/evals/reliability/sample-target-run/RELIABILITY.md).
+**Evals:** [`skills/threat-model/evals/`](skills/threat-model/evals/) is a **reference-free reliability harness** — point the skill at any real repository and it checks reliability with no per-target answer key: deterministic structure / consistency (`severity == band(L×I)`) / grounding against the real repo / coverage of the system's own discovered surface, plus judged reasoning quality, adversarial recall (a red team finds what the model missed), recon completeness, and cross-run stability. Real runs are in [`reliability/sample-runs/`](skills/threat-model/evals/reliability/sample-runs/) — a web app (OWASP NodeGoat, with a measured skill-improvement loop) and Terraform IaC (TerraGoat), run through the same harness with no per-target tuning.
 
 ### `/python-quality` — Python Code Quality Pipeline
 

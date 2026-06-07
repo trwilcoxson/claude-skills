@@ -3,8 +3,8 @@
 A **reference-free reliability harness**: it checks that the threat-model skill is reliable on
 *whatever real system you point it at*, with no per-target answer key. See
 [`reliability/`](reliability/) for the harness, and
-[`reliability/sample-target-run/RELIABILITY.md`](reliability/sample-target-run/RELIABILITY.md) for a
-real run against OWASP NodeGoat.
+[`reliability/sample-runs/`](reliability/sample-runs/) for real runs against OWASP NodeGoat (a web
+app, with a measured skill-improvement loop) and TerraGoat (Terraform IaC).
 
 ## Why not a fixed test suite
 

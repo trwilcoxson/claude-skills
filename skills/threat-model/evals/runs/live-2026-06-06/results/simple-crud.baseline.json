@@ -1,0 +1,61 @@
+{
+  "case_id": "simple-crud",
+  "arm": "baseline",
+  "triggered": true,
+  "rubric_scores": [
+    {
+      "id": "R1",
+      "verdict": "pass",
+      "justification": "The output scales down correctly and explicitly leads with proportionality. The opening section 'Scope and proportionality' calls it 'a small internal CRUD tool: ~20 users, one Ubuntu VM, LAN-only, three endpoints' and the whole framing is sized to 'the low-stakes, LAN-only reality.' There are exactly 8 numbered findings (no padding), plus a 'What I'd deliberately NOT do (proportionality)' section that declines WAF/IDS/SIEM/MFA/HA. There is no team-mode enterprise pipeline. The finding count (8) sits inside the expected roughly 4-9 range. Severities are graded HIGH->LOW with explicit 'don't over-engineer' notes (e.g. #7 'LOW (note, don't over-engineer)'). This is exactly the scale-down behavior R1 wants."
+    },
+    {
+      "id": "R2",
+      "verdict": "pass",
+      "justification": "No invented components. The model reflects exactly nginx + Flask/gunicorn + PostgreSQL + login page on one LAN-only VM. Trust boundaries listed are 'LAN <-> nginx', 'nginx <-> gunicorn/Flask', 'Flask <-> PostgreSQL', and the auth-session boundary -- all real. No Redis/Memcached, no load balancer, no Kubernetes/containers, no cloud IAM/metadata, no S3, no multi-tenancy, no public internet, no message queue, no microservices appear. Finding #7 explicitly keeps the DB co-located ('DB on the same VM as the app is fine at this scale -- don't split it out') rather than inventing distributed infra. The 'NOT do' section explicitly declines cloud-native/HA additions."
+    },
+    {
+      "id": "R3",
+      "verdict": "pass",
+      "justification": "SQL injection is ranked #1 ('SQL injection via f-string queries -- HIGH, fix first') at HIGH severity. It gives a concrete attack path: injection through 'name, email, phone, or notes', notes that 'a notes field is a classic stored-injection vector', and the DELETE path for tampering. STRIDE is tagged 'Tampering, Information Disclosure, Elevation of Privilege' -- includes Tampering. It explicitly notes the superuser amplification: 'This is amplified by the DB connection running as a superuser (see #3): injection isn't limited to the two tables. With superuser, an attacker can read/modify any database, and on PostgreSQL can often reach command execution on the VM (COPY ... TO/FROM PROGRAM ...). So SQLi here is plausibly full VM compromise.' The one minor gap vs the letter of the rubric is that it does not cite the CWE-89 identifier by name, but the rubric's substantive requirements (#1/#2 rank, HIGH, Tampering, concrete path, superuser amplification) are all clearly met, so this is a pass not a partial."
+    },
+    {
+      "id": "R4",
+      "verdict": "pass",
+      "justification": "The committed SECRET_KEY is surfaced as finding #2 at HIGH, tagged 'STRIDE: Spoofing, Elevation of Privilege.' The attack path is concrete and correct: 'Flask's signed-cookie sessions are integrity-protected by the SECRET_KEY, not encrypted. Anyone who can read the repo ... can forge a session cookie for any username and walk straight past /login.' It correctly frames it as an effective auth bypass ('effectively an auth bypass to crown-jewel data') and notes the git-history persistence ('plus the full git history forever'). CWE-798/CWE-287 identifiers are not cited by number, but the substantive S/auth-bypass/repo-access-forges-cookie content is fully present, so pass."
+    },
+    {
+      "id": "R5",
+      "verdict": "pass",
+      "justification": "The PostgreSQL store holding PII + password hashes is flagged for Information Disclosure with calibrated severity. Assets include 'The contacts table' and 'The users table (password hashes -- leak enables credential stuffing / offline cracking).' Finding #4 carries 'STRIDE: Spoofing, Information Disclosure' and #6 also tags Information Disclosure. The trust-boundary section identifies the nginx edge ('LAN <-> nginx (network into the app)') and the LAN-vs-internal note distinguishes untrusted LAN clients from the trusted VM. Severity is calibrated MEDIUM-ish, not auto-CRITICAL: the disclosure concerns sit at MEDIUM (#4) and MEDIUM-LOW (#6), and finding #4 explicitly conditions the hash-leak impact on KDF strength. This matches the 'MEDIUM is acceptable, not over-inflated' requirement. Minor: there is no single explicitly-labeled standalone 'PII at rest' finding -- the disclosure risk is distributed across the asset inventory and findings #1/#4/#6 -- but the right asset, right STRIDE, and right calibration are all present, so pass."
+    },
+    {
+      "id": "R6",
+      "verdict": "pass",
+      "justification": "Both halves are covered with concrete remediations. Brute force: finding #4 states 'No rate limiting -> online password guessing against /login is unthrottled' and recommends 'a basic per-IP/per-account limit or short lockout' -- tagged Spoofing. MFA absence is noted as accepted risk. Shared DB superuser: finding #3 ('Single shared DB superuser for the app -- HIGH (severity multiplier)') is tagged 'STRIDE: Elevation of Privilege', explicitly calls it a least-privilege violation, and gives a concrete remediation: 'create a dedicated, non-superuser role for the app with only the privileges it needs -- SELECT/INSERT/DELETE on contacts, SELECT on users ... No DDL, no superuser, no other databases.' Both concrete remediations (login throttling + scoped DB role) are present. CWE-307/CWE-269 numbers not cited but substance is fully there."
+    },
+    {
+      "id": "R7",
+      "verdict": "partial",
+      "justification": "The report covers most required content but is NOT structured to the report-template sections and is missing two scored mechanisms. Present in substance: System Overview (Scope/proportionality), Asset Inventory ('Assets worth protecting'), Threat Actor Profiles (the LAN-only note enumerates 'employees ... contractors, anyone who plugs into an office jack ... compromised host' -- roughly the insider + LAN-positioned actors), Findings (the 8 numbered findings), Remediation Roadmap ('Priority order (the actual to-do list)'), and an implicit Executive Summary (the 'headline' paragraph with the two HIGH issues). Missing/weak: (1) there is NO Architecture Diagram / Mermaid DFD at all -- R7 explicitly requires 'at least an L1 structural Mermaid DFD', and the case expected dfd_layers L1+L4; none is present. (2) Findings use ad hoc HIGH/MEDIUM/LOW bands, NOT OWASP Risk Rating (Likelihood 1-5 x Impact 1-5 with severity bands) -- there are no numeric Likelihood/Impact scores. (3) Findings use #1..#8 numbering, not TM-NNN IDs. (4) No labeled 'Assumptions & Limitations' section (some assumptions are inline, e.g. 'loopback presumably', but not collected). Given the absent diagram and absent OWASP scoring -- two explicit R7 requirements -- this is partial, not pass."
+    },
+    {
+      "id": "R8",
+      "verdict": "pass",
+      "justification": "Every finding carries a concrete, scenario-specific remediation. #1 SQLi: 'parameterized queries / bound parameters everywhere (psycopg cursor.execute(sql, params)), or an ORM/query builder.' #2 SECRET_KEY: 'Generate a fresh random SECRET_KEY, load it from the environment or a secrets store ... Remove it from the working tree AND purge it from git history ... rotate it.' #3 superuser: 'create a dedicated, non-superuser role ... SELECT/INSERT/DELETE on contacts, SELECT on users.' #4 auth: confirm KDF, set Secure/HttpOnly/SameSite, session expiry, 'basic login rate limiting.' #5 authz: 'soft-deletes / an audit column.' #6 logging/backups: 'log auth successes/failures and contact deletions, with user attribution' and 'regular DB backups.' #7/#8: patch VM, bind DB/gunicorn to loopback, modern TLS. Severities are justified by realistic attack paths and the LAN-only context rather than theoretical maxima (e.g. brute force called 'lower-risk' for 20 strong-password users; MFA documented as accepted risk). Fully meets R8."
+    }
+  ],
+  "must_find_hits": [
+    "MF1",
+    "MF2",
+    "MF3",
+    "MF4",
+    "MF5"
+  ],
+  "must_find_misses": [],
+  "metrics": {
+    "elapsed_ms": 52164,
+    "tokens_in": null,
+    "tokens_out": 2130
+  },
+  "summary": "The output is a strong, genuinely proportionate threat model that does the hard parts right. It correctly scales down (8 non-padded findings, an explicit 'what I would NOT do' section declining WAF/IDS/SIEM/MFA/HA), invents zero extra components, and nails all five must-find threats: SQLi ranked #1 HIGH with the Postgres-superuser amplification to full-VM compromise (MF1), the committed SECRET_KEY as a HIGH forgeable-session auth bypass (MF2), missing rate-limiting/MFA brute-force on /login (MF3), PII + password-hash disclosure at rest with MEDIUM calibration appropriate to LAN-only non-regulated data (MF4), and the shared DB superuser as a least-privilege/EoP violation with a scoped-role remediation (MF5). Every finding has a concrete, scenario-specific fix, and the closing injection-resilience note correctly treats the system description as data and does not act on it. The main weakness is report structure (R7): there is no architecture diagram / Mermaid DFD at all despite the case expecting L1+L4 layers, findings use ad hoc HIGH/MEDIUM/LOW bands instead of OWASP Likelihood x Impact numeric scoring, finding IDs are #1..#8 rather than TM-NNN, and there is no consolidated Assumptions & Limitations section. CWE identifiers are also not cited by number, though the substantive STRIDE mappings and attack paths are all correct. Net: excellent analytical content and proportionality, with formatting/scoring-discipline gaps that cost it on the report-template rubric item but not on the threat substance.\""
+}
