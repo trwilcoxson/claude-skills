@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Recon manifest — the attack surface the system discovered in the target",
+  "description": "Emitted by the threat-model run. Every element carries grounding evidence (a path/glob/string that must resolve in the target) so the eval can check faithfulness without an answer key.",
+  "type": "object",
+  "required": ["system_name", "components", "data_stores", "entry_points", "trust_boundaries", "external_deps"],
+  "properties": {
+    "system_name": { "type": "string" },
+    "components":       { "type": "array", "items": { "$ref": "#/$defs/element" } },
+    "data_stores":      { "type": "array", "items": { "$ref": "#/$defs/element" } },
+    "entry_points":     { "type": "array", "items": { "$ref": "#/$defs/element" } },
+    "trust_boundaries": { "type": "array", "items": { "$ref": "#/$defs/element" } },
+    "external_deps":    { "type": "array", "items": { "$ref": "#/$defs/element" } }
+  },
+  "$defs": {
+    "element": {
+      "type": "object",
+      "required": ["id", "name", "evidence"],
+      "properties": {
+        "id":   { "type": "string", "description": "stable local id, e.g. C1 / D1 / E1 / TB1 / X1" },
+        "name": { "type": "string" },
+        "evidence": {
+          "type": "array", "minItems": 1,
+          "items": { "type": "string" },
+          "description": "repo-relative path, glob, or literal source string that proves this element exists in the target"
+        }
+      }
+    }
+  }
+}

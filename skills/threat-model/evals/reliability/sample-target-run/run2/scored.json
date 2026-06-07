@@ -1,0 +1,25 @@
+{
+  "defects": [],
+  "stats": {
+    "findings": 20,
+    "counts": {
+      "LOW": 0,
+      "MEDIUM": 5,
+      "HIGH": 10,
+      "CRITICAL": 5
+    },
+    "recon_elements": 45,
+    "surface_elements": 23,
+    "surface_covered": 20,
+    "grounded": 45,
+    "ungrounded": 0,
+    "cwe_ids": 46,
+    "mitre_ids": 35
+  },
+  "scores": {
+    "structure_pass": true,
+    "consistency_pass": true,
+    "grounding": 1.0,
+    "coverage": 1.0
+  }
+}

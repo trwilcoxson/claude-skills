@@ -22,7 +22,7 @@ Run a threat model on [target]
 
 **Dependencies:** Requires [claude-agents](https://github.com/trwilcoxson/claude-agents) for the specialist agent definitions. See the [architecture doc](https://github.com/trwilcoxson/claude-agents/blob/main/docs/ARCHITECTURE.md) for the full system design.
 
-**Evals & benchmarks:** [`skills/threat-model/evals/`](skills/threat-model/evals/) is a self-testing harness for the skill — a fixed set of graded cases (payment/PCI, microservices, agentic+RAG, serverless, multi-tenant K8s, plus trigger-negative and prompt-injection cases), a deterministic scorer, an HTML benchmark comparing the skill against a no-skill baseline (pass rate / time / tokens), and regression, outgrowth, and trigger-tuning tooling. This is meta-level evaluation of the skill itself, distinct from the in-run validation layer. See its [README](skills/threat-model/evals/README.md).
+**Evals:** [`skills/threat-model/evals/`](skills/threat-model/evals/) is a **reference-free reliability harness** — point the skill at any real repository and it checks reliability with no per-target answer key: deterministic structure / consistency (`severity == band(L×I)`) / grounding against the real repo / coverage of the system's own discovered surface, plus judged reasoning quality, adversarial recall (a red team finds what the model missed), recon completeness, and cross-run stability. A real run against OWASP NodeGoat is in [`reliability/sample-target-run/`](skills/threat-model/evals/reliability/sample-target-run/RELIABILITY.md).
 
 ### `/python-quality` — Python Code Quality Pipeline
 

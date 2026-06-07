@@ -1,0 +1,69 @@
+{
+  "system_name": "OWASP NodeGoat",
+  "components": [
+    {"id": "C1", "name": "Express HTTP Server (bootstrap, middleware, session)", "evidence": ["server.js"]},
+    {"id": "C2", "name": "Route Registration / Router", "evidence": ["app/routes/index.js"]},
+    {"id": "C3", "name": "SessionHandler (login, signup, auth middleware)", "evidence": ["app/routes/session.js"]},
+    {"id": "C4", "name": "ProfileHandler", "evidence": ["app/routes/profile.js"]},
+    {"id": "C5", "name": "ContributionsHandler", "evidence": ["app/routes/contributions.js"]},
+    {"id": "C6", "name": "AllocationsHandler", "evidence": ["app/routes/allocations.js"]},
+    {"id": "C7", "name": "BenefitsHandler", "evidence": ["app/routes/benefits.js"]},
+    {"id": "C8", "name": "MemosHandler", "evidence": ["app/routes/memos.js"]},
+    {"id": "C9", "name": "ResearchHandler (outbound HTTP fetch)", "evidence": ["app/routes/research.js"]},
+    {"id": "C10", "name": "TutorialRouter", "evidence": ["app/routes/tutorial.js"]},
+    {"id": "C11", "name": "ErrorHandler middleware", "evidence": ["app/routes/error.js"]},
+    {"id": "C12", "name": "UserDAO (auth, user persistence)", "evidence": ["app/data/user-dao.js"]},
+    {"id": "C13", "name": "AllocationsDAO ($where query builder)", "evidence": ["app/data/allocations-dao.js"]},
+    {"id": "C14", "name": "ProfileDAO", "evidence": ["app/data/profile-dao.js"]},
+    {"id": "C15", "name": "BenefitsDAO", "evidence": ["app/data/benefits-dao.js"]},
+    {"id": "C16", "name": "ContributionsDAO", "evidence": ["app/data/contributions-dao.js"]},
+    {"id": "C17", "name": "MemosDAO", "evidence": ["app/data/memos-dao.js"]},
+    {"id": "C18", "name": "Swig Templating Engine (autoescape disabled)", "evidence": ["server.js", "app/views/layout.html"]},
+    {"id": "C19", "name": "Configuration loader", "evidence": ["config/config.js", "config/env/all.js"]},
+    {"id": "C20", "name": "Docker / docker-compose runtime", "evidence": ["Dockerfile", "docker-compose.yml"]}
+  ],
+  "data_stores": [
+    {"id": "D1", "name": "MongoDB users collection (credentials, SSN, DOB, bank account, routing, isAdmin)", "evidence": ["app/data/user-dao.js", "app/data/profile-dao.js", "config/env/all.js"]},
+    {"id": "D2", "name": "MongoDB allocations collection", "evidence": ["app/data/allocations-dao.js"]},
+    {"id": "D3", "name": "MongoDB contributions collection", "evidence": ["app/data/contributions-dao.js"]},
+    {"id": "D4", "name": "MongoDB memos collection", "evidence": ["app/data/memos-dao.js"]},
+    {"id": "D5", "name": "MongoDB counters collection (id sequence)", "evidence": ["app/data/user-dao.js"]},
+    {"id": "D6", "name": "Express in-memory session store (MemoryStore default)", "evidence": ["server.js"]},
+    {"id": "D7", "name": "Committed TLS private key and certificate", "evidence": ["artifacts/cert/server.key", "artifacts/cert/server.crt"]},
+    {"id": "D8", "name": "Seed data with plaintext default credentials", "evidence": ["artifacts/db-reset.js"]}
+  ],
+  "entry_points": [
+    {"id": "E1", "name": "POST /login", "evidence": ["app/routes/index.js", "app/routes/session.js"]},
+    {"id": "E2", "name": "POST /signup", "evidence": ["app/routes/index.js", "app/routes/session.js"]},
+    {"id": "E3", "name": "GET /login, GET /signup, GET /logout, GET / , GET /dashboard", "evidence": ["app/routes/index.js", "app/routes/session.js"]},
+    {"id": "E4", "name": "POST /profile", "evidence": ["app/routes/index.js", "app/routes/profile.js"]},
+    {"id": "E5", "name": "GET /profile", "evidence": ["app/routes/index.js", "app/routes/profile.js"]},
+    {"id": "E6", "name": "POST /contributions", "evidence": ["app/routes/index.js", "app/routes/contributions.js"]},
+    {"id": "E7", "name": "GET /contributions", "evidence": ["app/routes/index.js", "app/routes/contributions.js"]},
+    {"id": "E8", "name": "GET /allocations/:userId", "evidence": ["app/routes/index.js", "app/routes/allocations.js"]},
+    {"id": "E9", "name": "GET /benefits and POST /benefits", "evidence": ["app/routes/index.js", "app/routes/benefits.js"]},
+    {"id": "E10", "name": "GET /memos, POST /memos", "evidence": ["app/routes/index.js", "app/routes/memos.js"]},
+    {"id": "E11", "name": "GET /learn?url= (open redirect)", "evidence": ["app/routes/index.js"]},
+    {"id": "E12", "name": "GET /research?url=&symbol= (outbound fetch)", "evidence": ["app/routes/index.js", "app/routes/research.js"]},
+    {"id": "E13", "name": "GET /tutorial/* static lesson pages", "evidence": ["app/routes/tutorial.js"]},
+    {"id": "E14", "name": "Static asset server (express.static)", "evidence": ["server.js"]}
+  ],
+  "trust_boundaries": [
+    {"id": "TB1", "name": "Internet -> Express HTTP listener (plaintext HTTP, no TLS)", "evidence": ["server.js"]},
+    {"id": "TB2", "name": "Authenticated user vs anonymous (isLoggedIn middleware)", "evidence": ["app/routes/index.js", "app/routes/session.js"]},
+    {"id": "TB3", "name": "Regular user vs admin (isAdmin middleware, unenforced on /benefits)", "evidence": ["app/routes/index.js", "app/routes/session.js", "app/routes/benefits.js"]},
+    {"id": "TB4", "name": "Application process -> MongoDB database", "evidence": ["config/env/all.js", "app/data/user-dao.js", "docker-compose.yml"]},
+    {"id": "TB5", "name": "Application -> arbitrary external host (SSRF egress)", "evidence": ["app/routes/research.js"]},
+    {"id": "TB6", "name": "Container / host boundary", "evidence": ["Dockerfile", "docker-compose.yml"]}
+  ],
+  "external_deps": [
+    {"id": "X1", "name": "mongodb driver 2.1.x (legacy, supports $where JS execution)", "evidence": ["package.json"]},
+    {"id": "X2", "name": "swig 1.4.x (unmaintained template engine)", "evidence": ["package.json", "server.js"]},
+    {"id": "X3", "name": "marked 0.3.5 (outdated markdown renderer)", "evidence": ["package.json", "app/views/memos.html"]},
+    {"id": "X4", "name": "bcrypt-nodejs 0.0.3 (deprecated, unused for storage)", "evidence": ["package.json", "app/data/user-dao.js"]},
+    {"id": "X5", "name": "needle 2.2.4 (HTTP client for outbound research fetch)", "evidence": ["package.json", "app/routes/research.js"]},
+    {"id": "X6", "name": "express-session 1.13.x with default MemoryStore", "evidence": ["package.json", "server.js"]},
+    {"id": "X7", "name": "helmet / csurf / dont-sniff-mimetype declared but disabled", "evidence": ["package.json", "server.js"]},
+    {"id": "X8", "name": "node-esapi 0.0.1 (output encoding library)", "evidence": ["package.json", "app/routes/profile.js"]}
+  ]
+}

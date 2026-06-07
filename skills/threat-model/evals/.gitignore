@@ -1,4 +1,3 @@
-# Generated run artifacts and local baseline state — not committed.
-runs/
-baselines/current/
+# Generated per-run artifacts — not committed (sample-target-run/ is the committed proof).
+reliability/runs/
 __pycache__/
