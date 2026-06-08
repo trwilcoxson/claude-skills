@@ -25,26 +25,37 @@ the actual flow (reconnaissance over real code/IaC), not a paraphrase.
    `%% Version: ... | Layer: L{N}`; every edge typed + annotated with protocol/sensitivity
    (`[CONFIDENTIAL]` etc.) and `[ENC]`/`[PLAIN]`; trust-boundary subgraphs; ownership markers on
    nodes (`[team:]`/`[vendor:]`/`[managed]`); and an L4 overlay with risk classes + threat
-   annotations whose `TM-NNN` ids match findings. A diagram missing these fails diagram verification.
+   annotations whose `TM-NNN` ids match findings.
+   The gate also requires the **analytical & communication visuals** when their precondition holds
+   (formats in `references/analytical-visuals.md` and `references/mermaid-diagrams.md`): STRIDE-per-
+   element matrix (always), L×I risk heat map (any scored finding), MITRE ATT&CK layer (any
+   finding.mitre), RBAC matrix (≥2 roles), SBOM graph (deps with a manifest), auth sequence (auth
+   surface), and an attack tree + attack flow per declared kill chain (≥3 chains). You decide the
+   *content* by analysis; the templates only fix the *shape*. A missing applicable visual fails
+   diagram verification.
 
    **`recon.json`** — the attack surface you discovered, every element carrying grounding
    evidence (a repo-relative path, glob, or literal source string that actually resolves in
-   `{repo}`):
+   `{repo}`). Also set the neutral facts the verifier gates on: trust_boundary `kind`, external_dep
+   `manifest`/`risk`, and `roles[]` (include `anonymous`) when the system has distinct principals:
    ```json
    {"system_name":"...","components":[{"id":"C1","name":"...","evidence":["app/routes/session.js"]}],
     "data_stores":[{"id":"D1","name":"...","evidence":["..."]}],
     "entry_points":[{"id":"E1","name":"POST /login","evidence":["app/routes/session.js"]}],
-    "trust_boundaries":[{"id":"TB1","name":"...","evidence":["..."]}],
-    "external_deps":[{"id":"X1","name":"...","evidence":["package.json"]}]}
+    "trust_boundaries":[{"id":"TB1","name":"internet edge","evidence":["server.js"],"kind":"network"}],
+    "external_deps":[{"id":"X1","name":"express","evidence":["package.json"],"manifest":"package.json","risk":"EOL"}],
+    "roles":[{"id":"anon","name":"anonymous"},{"id":"admin","name":"admin"}]}
    ```
 
-   **`findings.json`** — a machine-readable mirror of the report's findings:
+   **`findings.json`** — a machine-readable mirror of the report's findings, plus any multi-step
+   kill chains you identified (so the verifier can require one attack tree + flow per chain):
    ```json
    {"findings":[{"id":"TM-001","title":"...","stride_lm":["I","LM"],
      "likelihood":4,"impact":5,"severity":"CRITICAL","cwe":["CWE-..."],"mitre":["T1078"],
      "asset_refs":["C1","D1"],"surface_refs":["E1"],"attack_path":"...","remediation":"..."}],
     "summary_counts":{"LOW":0,"MEDIUM":0,"HIGH":0,"CRITICAL":0},
-    "no_issue_surface":["TB2"]}
+    "no_issue_surface":["TB2"],
+    "kill_chains":[{"id":"KC1","goal":"exfiltrate PII","steps":["TM-001","TM-004"]}]}
    ```
 
 ## Rules the harness will check deterministically — get them right

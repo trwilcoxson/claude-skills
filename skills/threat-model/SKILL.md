@@ -14,7 +14,8 @@ Define `{output_dir}` as `{project_root}/threat-model-output/` unless the user s
 ## Reference Files
 - **Diagram spec**: [references/mermaid-spec.md](references/mermaid-spec.md) — symbol taxonomy (3 tiers), 8 typed edge types, classDefs, threat annotations, accessibility, ownership markers
 - **Diagram layers**: [references/mermaid-layers.md](references/mermaid-layers.md) — 4-layer separation (L1 Architecture, L2 Trust & Identity, L3 Data, L4 Threat Overlay), scaling rules
-- **Companion diagrams**: [references/mermaid-diagrams.md](references/mermaid-diagrams.md) — attack trees, auth sequences, data lifecycle diagrams
+- **Companion diagrams**: [references/mermaid-diagrams.md](references/mermaid-diagrams.md) — attack trees, attack flows, auth sequences, data lifecycle diagrams
+- **Analytical visuals**: [references/analytical-visuals.md](references/analytical-visuals.md) — STRIDE-per-element matrix, L×I risk heat map, MITRE ATT&CK layer, RBAC matrix, SBOM/dependency graph
 - **Diagram templates**: [references/mermaid-templates.md](references/mermaid-templates.md) — copy-paste-ready templates (SaaS, Event-Driven, K8s), symbol/edge legends
 - **Diagram review checklist**: [references/mermaid-review-checklist.md](references/mermaid-review-checklist.md) — pre-submission quality gates
 - **Frameworks**: [references/frameworks.md](references/frameworks.md) — STRIDE-LM, PASTA, OWASP Risk Rating, MITRE ATT&CK, CWE groups, LINDDUN
@@ -427,7 +428,16 @@ Do NOT finalize the diagrams until every item holds — a diagram that misses th
 - **L4 risk layer linked to findings** — risk classDefs applied, threat annotations (§5: `⚠ {STRIDE} · {L}×{I}={Score} {BAND}`, MITRE/CWE) on risk-bearing nodes, and the `TM-NNN` id present so each overlay risk traces to a finding in the report. Every HIGH+ finding's components appear, risk-colored, in L4.
 - **Legend + version stamp** on every diagram (§6).
 
-This gate is what the evals verify deterministically (`evals/reliability/diagram_checks.py`); a run that skips it fails diagram verification.
+**Analytical & communication visuals (conditional — produce each when its precondition holds, else mark NOT APPLICABLE with a one-line reason).** Formats in [references/analytical-visuals.md](references/analytical-visuals.md):
+- **STRIDE-per-element coverage matrix** — always. Fully populated (every cell a `TM-NNN` / `n/a` / `clean`).
+- **Likelihood×Impact risk heat map** — when any finding is scored. 5×5 grid, every finding at its own (L,I) cell.
+- **MITRE ATT&CK technique layer** — when any finding carries a MITRE id. Technique table; Navigator JSON layer at ≥5 techniques.
+- **Authorization (RBAC) matrix** — when ≥2 roles (declare them in recon `roles[]`, incl. anonymous). Roles × resources, anonymous row.
+- **SBOM / dependency graph** — when external deps are backed by a manifest (set `manifest` on the recon dep). Rooted graph with `:::externalDep` leaves.
+
+**Companion diagrams (conditional)** — see [references/mermaid-diagrams.md](references/mermaid-diagrams.md): an **auth sequence** when the system has AuthN/AuthZ (§3), and an **attack tree** (§2) + **attack flow** (§5) per declared kill chain when ≥3 kill chains exist (declare them in findings `kill_chains[]`).
+
+This gate is what the evals verify deterministically (`evals/reliability/diagram_checks.py`) — presence/shape/consistency, each gated by its precondition; correctness is assessed by the diagram judge. A run that skips an applicable visual fails diagram verification.
 
 **File Output**: Save to `{output_dir}/02-structural-diagram.md`.
 
@@ -546,8 +556,12 @@ Switch to an **expansive, adversarial mindset**. Assume Phases 3-4 missed threat
 
 10. **Cascade failures**: If component A fails, what happens to B, C, D? Can a targeted failure cascade to system-wide impact?
 
-### Attack Tree Diagrams
-For kill chains with 3 or more steps, produce attack tree diagrams using [references/mermaid-diagrams.md](references/mermaid-diagrams.md) §2. Use `flowchart TD` with goal→sub-goal→technique hierarchy, AND/OR gates, and feasibility coloring. Save each as `{name}-attack-tree-{N}.mmd`.
+### Attack Trees, Attack Flows, and Kill-Chain Declaration
+When the analysis yields 3 or more multi-step kill chains, **declare each chain** in `findings.json`
+`kill_chains[]` (`{id, goal, steps:[TM-ids]}`) — this is your judgment of what composes a chain, and
+it is what verification gates on. For each declared chain produce both views:
+- an **attack tree** ([references/mermaid-diagrams.md](references/mermaid-diagrams.md) §2): `flowchart TD`, goal→sub-goal→technique with AND/OR gates and feasibility coloring. Save `{name}-attack-tree-{N}.mmd`.
+- an **attack flow** (§5): `flowchart LR`, initial-access→…→objective, steps labeled with their `TM-NNN` and technique. Save `{name}-attack-flow-{N}.mmd`.
 
 Document all newly identified threats using the same Phase 3 identification format (Threat ID, Title, STRIDE-LM, components, cross-framework, description). Then apply the full Phase 4 scoring to each new threat (threat actor, attack path, likelihood, impact, risk score, severity).
 

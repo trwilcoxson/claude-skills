@@ -173,6 +173,15 @@ Score each threat identified in Phase 3.
 - [ ] All trust boundaries drawn
 - [ ] New components or flows discovered in Phases 3-5 added
 
+### Analytical & Communication Visuals (each when applicable, else NOT APPLICABLE with reason)
+- [ ] STRIDE-per-element coverage matrix — fully populated (every cell TM-id / n/a / clean)
+- [ ] Likelihood×Impact risk heat map — every scored finding placed at its own (L,I) cell
+- [ ] MITRE ATT&CK technique layer — techniques == distinct finding techniques (+ Navigator JSON at ≥5)
+- [ ] Authorization (RBAC) matrix — when ≥2 roles; includes an anonymous row
+- [ ] SBOM / dependency graph — when external deps have a manifest
+- [ ] Auth sequence diagram — when AuthN/AuthZ present
+- [ ] Attack tree + attack flow per declared kill chain (≥3 chains); chains declared in findings.json `kill_chains[]`
+
 ### Accuracy
 - [ ] Trust boundaries correctly reflect validated security zones
 - [ ] Data flow directions correct

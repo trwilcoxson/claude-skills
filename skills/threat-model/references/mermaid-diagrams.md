@@ -159,13 +159,51 @@ flowchart LR
 
 ---
 
-## §5 Phase Integration
+## §5 Attack Flow / Kill Chain
+
+**Purpose**: Show the *temporal/lateral* progression of an attack — the sequence and branches from initial access to objective — as opposed to the attack tree's goal decomposition. Produced in Phase 5 for the top declared kill chains.
+
+**Mermaid type**: `flowchart LR` (left-to-right progression).
+
+**Structure**:
+- **Entry node**: the initial-access step (in-degree 0).
+- **Action/condition nodes**: each subsequent step, labeled with its technique and the finding id it exploits.
+- **Objective node**: the attacker's end state (out-degree 0).
+- Edges show ordering; branch where the chain forks.
+
+**Conventions**:
+- Reference the finding ids (`TM-NNN`) the steps exploit and MITRE technique ids in node labels.
+- Stamp `%% Version: ... | Type: Attack Flow | Chain: KC{N}`.
+- Color steps by severity using the standard classDefs.
+
+**Output filename**: `{name}-attack-flow-{N}.mmd` (one per top kill chain).
+
+**Example**:
+```mermaid
+flowchart LR
+    %% Version: 2026-06-07 | Phase: 5 | System: ExampleApp | Type: Attack Flow | Chain: KC1
+    IA["Initial access\nT1190 · TM-001"]:::highRisk
+    EX["Execute\nT1059 · TM-001"]:::highRisk
+    LM["Lateral move\nT1021 · TM-004"]:::highRisk
+    OBJ(["Objective: exfiltrate PII\nTM-005"]):::criticalRisk
+    IA --> EX --> LM --> OBJ
+    classDef highRisk fill:#f8d7da,stroke:#721c24,color:#000
+    classDef criticalRisk fill:#dc3545,stroke:#491217,color:#fff
+```
+
+Declare one `kill_chains[]` entry in `findings.json` (`{id, goal, steps:[TM-ids]}`) per chain so
+verification can require one attack tree and one attack flow per declared chain.
+
+---
+
+## §6 Phase Integration
 
 This table maps each companion diagram type to the phases that produce and consume it, and specifies the output file location.
 
 | Diagram Type | Output Filename | Producing Phase | Primary Consumers | Included in Report? |
 |-------------|----------------|-----------------|-------------------|-------------------|
 | Attack Tree | `{name}-attack-tree-{N}.mmd` | Phase 5 | Phase 6 (validation), Phase 7 (overlay), Phase 8 (report) | Yes — Section VII (Findings) and Section XII (False Negative Results) |
+| Attack Flow | `{name}-attack-flow-{N}.mmd` | Phase 5 | Phase 7 (overlay), Phase 8 (report) | Yes — Section VII (Findings) |
 | Auth Sequence | `{name}-auth-sequence.mmd` | Phase 3 | Phase 6 (validation), Phase 7 (overlay), Phase 8 (report) | Yes — Section III/IV (Diagrams) and Section VII (auth findings) |
 | Data Lifecycle | `{name}-data-lifecycle-{asset}.mmd` | Phase 1 | Phase 3 (threats), Phase 7 (overlay), Phase 8 (report) | Yes — Section V (Asset Inventory) |
 
