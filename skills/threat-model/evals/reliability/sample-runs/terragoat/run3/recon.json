@@ -1,0 +1,53 @@
+{
+  "system_name": "TerraGoat AWS Infrastructure (terraform/aws)",
+  "components": [
+    {"id": "C1", "name": "web_host EC2 instance (Apache web server)", "evidence": ["ec2.tf"]},
+    {"id": "C2", "name": "db_app EC2 instance (PHP/Apache app server)", "evidence": ["db-app.tf"]},
+    {"id": "C3", "name": "analysis_lambda function (nodejs12.x)", "evidence": ["lambda.tf"]},
+    {"id": "C4", "name": "EKS cluster (eks_cluster)", "evidence": ["eks.tf"]},
+    {"id": "C5", "name": "Classic ELB (weblb)", "evidence": ["elb.tf"]},
+    {"id": "C6", "name": "Elasticsearch domain (monitoring-framework)", "evidence": ["es.tf"]},
+    {"id": "C7", "name": "EC2 instance profile / ec2role (s3:* ec2:* rds:*)", "evidence": ["db-app.tf"]},
+    {"id": "C8", "name": "iam_for_lambda execution role", "evidence": ["lambda.tf"]},
+    {"id": "C9", "name": "IAM user 'user' with excess_policy and access key", "evidence": ["iam.tf"]},
+    {"id": "C10", "name": "KMS key logs_key", "evidence": ["kms.tf"]},
+    {"id": "C11", "name": "ECR repository + null_resource docker push", "evidence": ["ecr.tf"]},
+    {"id": "C12", "name": "web_vpc network (VPC, subnets, IGW, route tables)", "evidence": ["ec2.tf"]},
+    {"id": "C13", "name": "VPC flow logs (aws_flow_log)", "evidence": ["resource \"aws_flow_log\" \"vpcflowlogs\""]}
+  ],
+  "data_stores": [
+    {"id": "D1", "name": "S3 bucket 'data' (public, customer-master.xlsx)", "evidence": ["s3.tf", "resources/customer-master.xlsx"]},
+    {"id": "D2", "name": "S3 bucket 'financials' (unencrypted)", "evidence": ["aws_s3_bucket\" \"financials\""]},
+    {"id": "D3", "name": "S3 bucket 'operations' (unencrypted)", "evidence": ["aws_s3_bucket\" \"operations\""]},
+    {"id": "D4", "name": "S3 bucket 'data_science' (unencrypted)", "evidence": ["aws_s3_bucket\" \"data_science\""]},
+    {"id": "D5", "name": "S3 bucket 'logs' (KMS encrypted)", "evidence": ["aws_s3_bucket\" \"logs\""]},
+    {"id": "D6", "name": "RDS MySQL instance 'default' (publicly accessible)", "evidence": ["db-app.tf", "publicly_accessible     = true"]},
+    {"id": "D7", "name": "Aurora RDS clusters app1-app9", "evidence": ["rds.tf", "app1-rds-cluster"]},
+    {"id": "D8", "name": "Neptune graph database cluster", "evidence": ["neptune.tf"]},
+    {"id": "D9", "name": "EBS volume + EBS snapshot (unencrypted)", "evidence": ["aws_ebs_volume\" \"web_host_storage\"", "aws_ebs_snapshot\" \"example_snapshot\""]},
+    {"id": "D10", "name": "Terraform S3 remote state backend", "evidence": ["backend \"s3\""]}
+  ],
+  "entry_points": [
+    {"id": "E1", "name": "ELB HTTP listener :80 -> instance :8000 (plaintext)", "evidence": ["lb_port           = 80", "instance_port     = 8000"]},
+    {"id": "E2", "name": "web-node SG ingress :22 SSH from 0.0.0.0/0", "evidence": ["from_port = 22"]},
+    {"id": "E3", "name": "web-node SG ingress :80 HTTP from 0.0.0.0/0", "evidence": ["from_port = 80"]},
+    {"id": "E4", "name": "RDS public endpoint :3306", "evidence": ["from_port         = \"3306\"", "publicly_accessible     = true"]},
+    {"id": "E5", "name": "db_app PHP form POST (NAME/ADDRESS) and SELECT * page", "evidence": ["$_POST['NAME']", "SELECT * FROM EMPLOYEES"]},
+    {"id": "E6", "name": "Elasticsearch domain access policy es:* / Principal *", "evidence": ["es.tf", "\"es:*\""]},
+    {"id": "E7", "name": "EKS cluster API endpoint (private+default public)", "evidence": ["endpoint_private_access = true"]},
+    {"id": "E8", "name": "Terraform outputs (db_endpoint, secret, endpoint)", "evidence": ["output \"db_endpoint\"", "output \"secret\""]}
+  ],
+  "trust_boundaries": [
+    {"id": "TB1", "name": "Internet -> public subnet (IGW, map_public_ip_on_launch)", "evidence": ["map_public_ip_on_launch = true", "aws_internet_gateway\" \"web_igw\""]},
+    {"id": "TB2", "name": "EC2 instance -> IAM role (instance metadata credential boundary)", "evidence": ["iam_instance_profile = aws_iam_instance_profile.ec2profile.name"]},
+    {"id": "TB3", "name": "AWS account -> Terraform operator / state backend", "evidence": ["backend \"s3\"", "data \"aws_caller_identity\" \"current\""]},
+    {"id": "TB4", "name": "VPC internal -> RDS security group (egress 0.0.0.0/0)", "evidence": ["cidr_blocks       = [\"0.0.0.0/0\"]", "aws_security_group\" \"default\""]}
+  ],
+  "external_deps": [
+    {"id": "X1", "name": "AWS provider with hardcoded access/secret key", "evidence": ["providers.tf", "AKIAIOSFODNN7EXAMPLE"]},
+    {"id": "X2", "name": "Docker Hub base image python:3.7-slim", "evidence": ["resources/Dockerfile", "FROM python:3.7-slim"]},
+    {"id": "X3", "name": "Amazon-published AMI (amzn2 / var.ami)", "evidence": ["data \"aws_ami\" \"amazon-linux-2\"", "ami-09a5b0b7edf08843d"]},
+    {"id": "X4", "name": "Lambda deployment package (resources zip)", "evidence": ["resources/lambda_function_payload.zip"]},
+    {"id": "X5", "name": "AWS-managed EKS policies (AmazonEKSClusterPolicy/ServicePolicy)", "evidence": ["arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"]}
+  ]
+}

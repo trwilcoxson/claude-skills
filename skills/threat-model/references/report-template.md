@@ -104,6 +104,24 @@ This template defines the **exact structure** for every consolidated report. Fol
 
 ---
 
+## Section IV-A: COVERAGE & COMMUNICATION VISUALS
+
+**Heading**: `# IV-A. Coverage & Communication Visuals`
+
+Include each visual whose precondition holds (formats in [analytical-visuals.md](analytical-visuals.md)
+and [mermaid-diagrams.md](mermaid-diagrams.md)); mark any inapplicable one NOT APPLICABLE with a
+one-line reason. Use these exact headings so they render and verify consistently:
+
+- `## STRIDE-per-Element Coverage Matrix` — always (fully populated; cells `TM-NNN`/`n/a`/`clean`).
+- `## Risk Heat Map (Likelihood × Impact)` — when any finding is scored (5×5, every finding placed).
+- `## MITRE ATT&CK Technique Coverage` — when any finding has a technique (+ Navigator JSON at ≥5).
+- `## Authorization (RBAC) Matrix` — when ≥2 roles (roles × resources, anonymous row).
+- `## SBOM / Dependency Graph` — when external deps are backed by a manifest.
+- Attack trees + attack flows (per declared kill chain) and the auth sequence diagram, embedded here
+  or in Section VII.
+
+---
+
 ## Section V: ASSET INVENTORY
 
 **Heading**: `# V. Asset Inventory`

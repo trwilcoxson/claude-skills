@@ -1,0 +1,83 @@
+{
+  "defects": [
+    {
+      "layer": "diagram",
+      "code": "missing-layers",
+      "detail": "system size 15 needs ['L1', 'L2', 'L3', 'L4']; missing ['L2', 'L3'] (present: ['L1', 'L4'])"
+    },
+    {
+      "layer": "diagram",
+      "code": "no-legend",
+      "detail": "no legend subgraph found (spec \u00a76 requires a legend)"
+    },
+    {
+      "layer": "diagram",
+      "code": "no-classdefs",
+      "detail": "no classDef block (spec \u00a78) \u2014 risk/role styling absent"
+    },
+    {
+      "layer": "diagram",
+      "code": "under-annotated-flows",
+      "detail": "only 42% of edges carry a sensitivity/type annotation ([CONFIDENTIAL]/[AUTH]/etc.); spec \u00a74 wants every flow annotated"
+    },
+    {
+      "layer": "diagram",
+      "code": "few-trust-boundaries",
+      "detail": "recon lists 7 trust boundaries but the diagram has 0 subgraph zone(s)"
+    },
+    {
+      "layer": "diagram",
+      "code": "no-component-metadata",
+      "detail": "L1 components carry almost no ownership markers (0%); spec \u00a77"
+    },
+    {
+      "layer": "diagram",
+      "code": "risk-layer-not-linked",
+      "detail": "L4 overlay references no TM-NNN finding id \u2014 risk layer not linked to findings"
+    }
+  ],
+  "stats": {
+    "findings": 20,
+    "counts": {
+      "LOW": 0,
+      "MEDIUM": 5,
+      "HIGH": 9,
+      "CRITICAL": 6
+    },
+    "recon_elements": 51,
+    "surface_elements": 34,
+    "surface_covered": 33,
+    "grounded": 51,
+    "ungrounded": 0,
+    "cwe_ids": 40,
+    "mitre_ids": 31,
+    "diagram": {
+      "blocks": 2,
+      "layers": [
+        "L1",
+        "L4"
+      ],
+      "size": 15,
+      "edges": 26,
+      "edges_annotated_frac": 0.423,
+      "components": 11,
+      "ownership_frac": 0.0,
+      "subgraphs": 0,
+      "l4_links_findings": false,
+      "warnings": [
+        "2/26 edges unlabeled (spec \u00a74 wants every arrow typed)"
+      ]
+    }
+  },
+  "scores": {
+    "structure_pass": true,
+    "consistency_pass": true,
+    "grounding": 1.0,
+    "coverage": 1.0,
+    "diagram_pass": false,
+    "required_layers_present": false,
+    "flows_annotated": 0.423,
+    "component_metadata": 0.0,
+    "risk_layer_linked": false
+  }
+}

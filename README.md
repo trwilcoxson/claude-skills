@@ -2,6 +2,29 @@
 
 Custom skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) that provide specialized workflows, domain expertise, and tool integrations.
 
+## Design & specification (OpenSpec)
+
+The threat-model skill and its evaluation harness are designed **spec-first** with
+[OpenSpec](https://github.com/Fission-AI/OpenSpec). The whole design — what each capability must do,
+expressed as `Requirement`/`Scenario` (WHEN/THEN) — lives in [`openspec/`](openspec/) and is the
+front door for understanding the system.
+
+```bash
+openspec list          # active change proposals + task status
+openspec view          # interactive dashboard of specs and changes
+openspec show <change> # a proposal + its spec deltas
+```
+
+One principle runs through every capability: **the LLM/agents do all reasoning and generation; the
+templates and evals only provide and enforce structure (the same kind of result each run) — never the
+answer.**
+
+| Change ([`openspec/changes/`](openspec/changes/)) | Capabilities | What it specifies |
+|---|---|---|
+| [`add-product-grade-diagrams`](openspec/changes/add-product-grade-diagrams/) | `threat-model-visuals`, `diagram-verification` | the 8 product-grade visuals (attack tree, attack flow, auth sequence, STRIDE-per-element matrix, L×I risk heat map, MITRE ATT&CK layer, RBAC matrix, SBOM) the skill renders, and the structure-only checks the eval enforces |
+| [`add-pipeline-observability`](openspec/changes/add-pipeline-observability/) | `pipeline-observability` | a run-event stream + a deterministic renderer for an uncluttered "what agent is doing what" view |
+| [`add-coverage-ledger`](openspec/changes/add-coverage-ledger/) | `completeness-coverage`, `coverage-verification` | a coverage ledger so agents attempt every production-grade item and track `present` / `absent` / `not-applicable` / `unknown` (with evidence), surfacing gaps instead of hiding them |
+
 ## Available Skills
 
 ### `threat-model` — Architectural Threat Modeling
@@ -11,9 +34,10 @@ Produces architectural threat models with Mermaid data flow diagrams, STRIDE-LM 
 **Features:**
 - 8-phase structured methodology (reconnaissance through final report)
 - Solo mode (threat model + report) or Team mode (adds privacy, compliance, code review agents)
-- Mermaid DFDs with 4-layer structural + risk overlay approach
+- Mermaid DFDs with 4-layer structural + risk overlay approach, plus a product-grade visual suite: attack trees, attack-flow/kill-chain graphs, auth sequences, STRIDE-per-element coverage matrix, Likelihood×Impact risk heat map, MITRE ATT&CK technique layer, RBAC matrix, and SBOM/dependency graph
+- A coverage ledger so the model attempts every production-grade item and records what it found, what's absent, and what it couldn't determine from the sources (gaps surfaced, not hidden)
 - Four output formats: HTML (interactive), Word (.docx), PDF, and Executive PPTX
-- Cross-agent validation and deduplication
+- Cross-agent validation and deduplication, with a run-event stream + `tm-observe` renderer for transparent stage/persona progress
 
 **Usage:**
 ```
@@ -21,6 +45,8 @@ Run a threat model on [target]
 ```
 
 **Dependencies:** Requires [claude-agents](https://github.com/trwilcoxson/claude-agents) for the specialist agent definitions. See the [architecture doc](https://github.com/trwilcoxson/claude-agents/blob/main/docs/ARCHITECTURE.md) for the full system design.
+
+**Evals:** [`skills/threat-model/evals/`](skills/threat-model/evals/) is a **reference-free reliability harness** — point the skill at any real repository and it checks reliability with no per-target answer key. Deterministic layers enforce *structure* only: report structure / consistency (`severity == band(L×I)`) / grounding against the real repo / coverage of the system's own discovered surface / **diagram verification** (the 4 DFD layers + the 8 product-grade visuals, presence + shape + consistency, each gated by a precondition). LLM-judged layers assess *correctness*: reasoning quality, adversarial recall (a red team finds what the model missed), recon completeness, diagram correctness, and cross-run stability. A run-event stream powers `tm-observe` for transparent per-stage/persona progress. Real runs are in [`reliability/sample-runs/`](skills/threat-model/evals/reliability/sample-runs/) on three system types — a web app (OWASP NodeGoat, with a measured multi-iteration skill-improvement loop), Terraform IaC (TerraGoat), and a ~900-file polyglot microservices app with an LLM agent (OWASP crAPI) — same harness, no per-target tuning. The harness is specified in [`openspec/`](openspec/).
 
 ### `/python-quality` — Python Code Quality Pipeline
 
@@ -145,10 +171,16 @@ Then restart Claude Code or start a new session.
 ## Structure
 
 ```
+openspec/                 # spec-first design (the front door)
+  changes/                # active change proposals (proposal + spec deltas + design + tasks)
+  specs/                  # consolidated capability specs (after changes are archived)
 skills/
   threat-model/
     SKILL.md              # Orchestration guide + 8-phase methodology
-    references/           # 11 reference files (frameworks, mermaid, templates)
+    references/           # frameworks, mermaid spec/layers/diagrams, analytical-visuals,
+                          #   report-template, checklists, pipeline-observability
+    evals/reliability/    # reference-free reliability + diagram + coverage verification,
+                          #   tm-observe renderer, schemas, judge prompts, sample-runs/
   agentic-ai-requirements/
     SKILL.md              # 3-mode assessment framework with progressive reference loading
     references/           # 8 reference files (requirements, patterns, safety, compliance, anti-patterns)

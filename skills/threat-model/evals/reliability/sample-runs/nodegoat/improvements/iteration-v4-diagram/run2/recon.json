@@ -1,0 +1,63 @@
+{
+  "system_name": "OWASP NodeGoat",
+  "description": "Express/Node.js retirement-savings web application backed by MongoDB. Deliberately vulnerable training app (OWASP Top 10). Handles user accounts, profiles with PII/financial data (SSN, DOB, bank account/routing), retirement contributions and allocations, shared memos, and a stock-research proxy.",
+  "components": [
+    {"id": "C1", "name": "Express Web Server (app bootstrap)", "tech": "Node.js, Express 4, swig/consolidate templating", "evidence": ["server.js", "app/routes/index.js"]},
+    {"id": "C2", "name": "Session/Auth Handler", "tech": "express-session, login/signup/logout", "evidence": ["app/routes/session.js", "app/data/user-dao.js"]},
+    {"id": "C3", "name": "Profile Handler", "tech": "profile view/update with PII", "evidence": ["app/routes/profile.js", "app/data/profile-dao.js"]},
+    {"id": "C4", "name": "Contributions Handler", "tech": "retirement contribution percentages", "evidence": ["app/routes/contributions.js", "app/data/contributions-dao.js"]},
+    {"id": "C5", "name": "Allocations Handler", "tech": "asset allocation view with threshold filter", "evidence": ["app/routes/allocations.js", "app/data/allocations-dao.js"]},
+    {"id": "C6", "name": "Benefits Handler", "tech": "admin benefits management", "evidence": ["app/routes/benefits.js", "app/data/benefits-dao.js"]},
+    {"id": "C7", "name": "Memos Handler", "tech": "shared memo board", "evidence": ["app/routes/memos.js", "app/data/memos-dao.js"]},
+    {"id": "C8", "name": "Research Handler (stock proxy)", "tech": "needle HTTP client fetches external URL", "evidence": ["app/routes/research.js", "app/data/research-dao.js"]},
+    {"id": "C9", "name": "Tutorial Router", "tech": "static OWASP tutorial pages", "evidence": ["app/routes/tutorial.js"]},
+    {"id": "C10", "name": "Error Handler Middleware", "tech": "renders error-template with stack", "evidence": ["app/routes/error.js", "app/views/error-template.html"]},
+    {"id": "C11", "name": "DB Reset / Seed Script", "tech": "Node.js seed of users and allocations", "evidence": ["artifacts/db-reset.js"]},
+    {"id": "C12", "name": "Configuration Loader", "tech": "merges env config, holds hardcoded secrets", "evidence": ["config/config.js", "config/env/all.js"]},
+    {"id": "C13", "name": "CI/CD Pipeline (GitHub Actions + Travis)", "tech": "lint, e2e (Cypress), Docker", "evidence": [".github/workflows/lint.yml", ".github/workflows/e2e-test.yml", ".travis.yml"]},
+    {"id": "C14", "name": "Container Image / Runtime", "tech": "Docker node:12-alpine, docker-compose, Procfile/Heroku", "evidence": ["Dockerfile", "docker-compose.yml", "Procfile", "app.json"]}
+  ],
+  "data_stores": [
+    {"id": "D1", "name": "users collection (credentials + PII + financial)", "tech": "MongoDB; plaintext password, ssn, dob, bankAcc, bankRouting", "evidence": ["app/data/user-dao.js", "app/data/profile-dao.js", "artifacts/db-reset.js"]},
+    {"id": "D2", "name": "allocations collection", "tech": "MongoDB", "evidence": ["app/data/allocations-dao.js"]},
+    {"id": "D3", "name": "contributions collection", "tech": "MongoDB", "evidence": ["app/data/contributions-dao.js"]},
+    {"id": "D4", "name": "memos collection (shared, all users)", "tech": "MongoDB", "evidence": ["app/data/memos-dao.js"]},
+    {"id": "D5", "name": "counters collection (id sequence)", "tech": "MongoDB findAndModify", "evidence": ["app/data/user-dao.js", "artifacts/db-reset.js"]},
+    {"id": "D6", "name": "Server-side session store", "tech": "express-session MemoryStore (default)", "evidence": ["server.js"]},
+    {"id": "D7", "name": "Committed TLS private key + certificate", "tech": "RSA private key in source tree", "evidence": ["artifacts/cert/server.key", "artifacts/cert/server.crt"]},
+    {"id": "D8", "name": "Hardcoded secrets in config", "tech": "cookieSecret, cryptoKey, zapApiKey literals", "evidence": ["config/env/all.js", "config/env/development.js", "config/env/test.js"]}
+  ],
+  "entry_points": [
+    {"id": "E1", "name": "POST /login", "evidence": ["app/routes/index.js", "app/routes/session.js"]},
+    {"id": "E2", "name": "POST /signup", "evidence": ["app/routes/index.js", "app/routes/session.js"]},
+    {"id": "E3", "name": "GET /logout", "evidence": ["app/routes/index.js", "app/routes/session.js"]},
+    {"id": "E4", "name": "GET/POST /profile", "evidence": ["app/routes/index.js", "app/routes/profile.js"]},
+    {"id": "E5", "name": "GET/POST /contributions", "evidence": ["app/routes/index.js", "app/routes/contributions.js"]},
+    {"id": "E6", "name": "GET /allocations/:userId", "evidence": ["app/routes/index.js", "app/routes/allocations.js"]},
+    {"id": "E7", "name": "GET/POST /benefits", "evidence": ["app/routes/index.js", "app/routes/benefits.js"]},
+    {"id": "E8", "name": "GET/POST /memos", "evidence": ["app/routes/index.js", "app/routes/memos.js"]},
+    {"id": "E9", "name": "GET /research", "evidence": ["app/routes/index.js", "app/routes/research.js"]},
+    {"id": "E10", "name": "GET /learn (open redirect)", "evidence": ["app/routes/index.js"]},
+    {"id": "E11", "name": "GET /dashboard and /", "evidence": ["app/routes/index.js", "app/routes/session.js"]},
+    {"id": "E12", "name": "GET /tutorial/*", "evidence": ["app/routes/tutorial.js"]},
+    {"id": "E13", "name": "Static asset server (express.static)", "evidence": ["server.js"]}
+  ],
+  "trust_boundaries": [
+    {"id": "TB1", "name": "Internet to Web Server (unauthenticated edge, plain HTTP)", "evidence": ["server.js", "app/routes/index.js"]},
+    {"id": "TB2", "name": "Authenticated session boundary (isLoggedIn middleware)", "evidence": ["app/routes/session.js", "app/routes/index.js"]},
+    {"id": "TB3", "name": "Admin privilege boundary (isAdmin middleware, unused on benefits)", "evidence": ["app/routes/session.js", "app/routes/index.js", "app/routes/benefits.js"]},
+    {"id": "TB4", "name": "Application to MongoDB (DB query boundary)", "evidence": ["server.js", "config/env/all.js", "docker-compose.yml"]},
+    {"id": "TB5", "name": "Application to external internet (research proxy egress)", "evidence": ["app/routes/research.js"]},
+    {"id": "TB6", "name": "CI/CD and container supply-chain boundary", "evidence": [".github/workflows/e2e-test.yml", ".travis.yml", "Dockerfile", "package.json"]}
+  ],
+  "external_deps": [
+    {"id": "X1", "name": "MongoDB driver (mongodb ^2.1.18, outdated)", "evidence": ["package.json"]},
+    {"id": "X2", "name": "swig templating (^1.4.2, deprecated/unmaintained)", "evidence": ["package.json", "server.js"]},
+    {"id": "X3", "name": "marked 0.3.5 (outdated markdown parser)", "evidence": ["package.json", "server.js"]},
+    {"id": "X4", "name": "needle 2.2.4 HTTP client (used for research proxy)", "evidence": ["package.json", "app/routes/research.js"]},
+    {"id": "X5", "name": "bcrypt-nodejs 0.0.3 (unmaintained, present but unused)", "evidence": ["package.json", "app/data/user-dao.js"]},
+    {"id": "X6", "name": "node:12-alpine base image (EOL Node 12)", "evidence": ["Dockerfile"]},
+    {"id": "X7", "name": "Heroku / app.json deploy platform", "evidence": ["app.json", "Procfile"]},
+    {"id": "X8", "name": "OWASP ZAP integration endpoint (dev/test config)", "evidence": ["config/env/development.js", "config/env/test.js"]}
+  ]
+}

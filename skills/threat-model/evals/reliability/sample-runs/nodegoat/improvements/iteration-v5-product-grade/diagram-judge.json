@@ -1,0 +1,32 @@
+{
+  "diagram_soundness": 0.88,
+  "verdict": "robust",
+  "issues": [
+    {
+      "area": "attack-tree",
+      "detail": "KC1 tree (report.md ~L698-718) mis-decomposes the goal. The AND1 gate combining T1078.001 default-creds (TM-011) and T1059 eval-RCE (TM-001) is nested UNDER sub-goal SG1 'Obtain an authenticated session', but eval-RCE is the execution/objective step, not a means to obtain a session. The AND should sit directly under the root Goal (need a session AND then RCE). The corresponding attack-flow (IA->EX->OBJ) is correctly ordered, so the kill chain is sound; only the tree's structure is wrong.",
+      "severity": "med"
+    },
+    {
+      "area": "attack-tree",
+      "detail": "Degenerate OR gates recur: KC1 OR1 has a single child (SG1); KC3 OR1 under SG1 has only T22; KC4 OR1 has only T10 (report.md ~L702, ~L793-795, ~L835-837). An OR with one branch carries no choice semantics \u2014 these foothold/access sub-goals realistically have alternatives (signup, default creds, sniffed session) that the single-child ORs omit.",
+      "severity": "low"
+    },
+    {
+      "area": "attack-layer",
+      "detail": "TM-014 plaintext PII at rest is mapped to ATT&CK T1530 'Data from Cloud Storage' (report.md L414, L439). NodeGoat's store is a self-hosted MongoDB (mongodb://mongo:27017/nodegoat in docker-compose.yml / config/env/all.js), not cloud object storage; T1213 'Data from Information Repositories' is the correct technique. Other ~18 technique mappings are sound.",
+      "severity": "low"
+    },
+    {
+      "area": "risk-layer",
+      "detail": "The TM-005 stored-XSS narrative in the L4 overlay and finding text (report.md C9 node L263, finding L580-586) attributes execution to Swig autoescape:false on raw req.body.memo, but the memo view renders via {{ marked(doc.memo) }} (app/views/memos.html:31) with marked.setOptions({sanitize:true}) in server.js. The XSS is real but runs THROUGH a bypass of marked 0.3.5's sanitizer; the mechanics as stated (raw script fires directly from disabled autoescape) are incomplete. The SBOM graph does correctly flag marked 0.3.5 XSS-bypass CVEs, so the chain is captured elsewhere.",
+      "severity": "low"
+    },
+    {
+      "area": "trust-boundaries",
+      "detail": "recon.json defines 4 trust boundaries (TB1-TB4) but the L2 'Trust & Identity' diagram (report.md L155-202) draws only 3 subgraph zones (Untrusted/AppZone/DataZone); TB3 CI/CD & supply chain appears only as a node in L4, not as an L2 boundary zone. The three zones that are drawn enclose the correct components and every plaintext flow correctly crosses TB1.",
+      "severity": "low"
+    }
+  ],
+  "notes": "Verified every diagram against the NodeGoat source. Architecture and risk content are accurate: eval() on /contributions (app/routes/contributions.js, TM-001), $where injection + IDOR in allocations (app/data/allocations-dao.js, app/routes/allocations.js, TM-002/TM-006), plaintext passwords (app/data/user-dao.js, TM-003), plaintext PII with commented-out crypto (app/data/profile-dao.js, TM-014), hardcoded benefits isAdmin:true (app/routes/benefits.js, TM-007), shared-memo XSS (app/routes/memos.js, TM-005), SSRF in research (app/routes/research.js, TM-004), ReDoS /([0-9]+)+#/ (app/routes/profile.js, TM-013), default admin/Admin_123 (artifacts/db-reset.js, TM-011), hardcoded cookieSecret/cryptoKey/zapApiKey (config/env/all.js, development.js, TM-009), committed RSA key (artifacts/cert/server.key, TM-008), cleartext http.createServer + commented helmet/csurf (server.js, TM-010/TM-017/TM-018), distinct login errors + raw console.log + no session.regenerate on login (app/routes/session.js, TM-016/TM-019/TM-015), weak PASS_RE /^.{1,20}$/ (TM-022), stack-trace leak (app/routes/error.js, TM-021), and dep versions marked 0.3.5/swig 1.4.2/mongodb 2.1.18/express 4.13.4/needle 2.2.4 (package.json). Taxonomy shapes (process/datastore/external/secret/gate) are used per meaning. Flow labels ([PLAIN], [RESTRICTED], [KEY]) are accurate for the real traffic. The L\u00d7I heat-map table reproduces findings.json scores exactly. The RBAC matrix's GAP cells (IDOR, no-isAdmin, all-memos) are genuine authz defects and routing (all app routes behind isLoggedIn, /benefits missing isAdmin) matches app/routes/index.js. The auth-sequence handshake and failure paths match session.js. The defects found are confined to the analytical layer: KC1's attack-tree decomposition mis-parents the eval step (med), recurring single-child OR gates (low), one weak ATT&CK technique mapping (low), and an incomplete XSS-mechanics narrative that is nonetheless backed by the SBOM (low). All structural DFD/risk diagrams are correct; verdict robust with these noted blemishes."
+}

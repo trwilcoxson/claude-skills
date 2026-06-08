@@ -1,0 +1,63 @@
+{
+  "case_id": "k8s-multitenant",
+  "arm": "baseline",
+  "triggered": true,
+  "rubric_scores": [
+    {
+      "id": "R1",
+      "verdict": "partial",
+      "justification": "A full threat-model run was produced (no refusal, not generic): STRIDE-LM-flavored per-component walk, a prioritized risk register with Likelihood/Impact/Priority columns, and attack-path narratives. However R1 demands specific framework artifacts that are absent or weak: (a) NO Mermaid DFD layers at all -- the output has 'Trust Boundaries and Assets' as prose and an ASCII-free narrative, but zero Mermaid diagrams, failing the 'at least L1+L4 Mermaid DFD layers (full 4-layer L1-L4 expected)' requirement. (b) Likelihood/Impact are qualitative ('High','Critical','Med-High') with no PASTA-derived numeric scoring and no OWASP Risk Rating severity bands (no Risk >=17 numbers, no 1-5 x 1-5). (c) No statement of Team mode selection. STRIDE-LM identification is present but the quantitative/diagram scaffolding required by R1 is missing, so partial."
+    },
+    {
+      "id": "R2",
+      "verdict": "pass",
+      "justification": "Finding 1 ('Shared kernel, no seccomp/AppArmor, privileged: true pods') explicitly ties BOTH privileged pods AND missing seccomp/AppArmor to a concrete breakout chain: 'A privileged: true pod has effectively root-equivalent access to the node ... can break out to the node and then read every other tenant's pod, memory, secrets ... and service account tokens on that node. This collapses all per-namespace isolation for co-located tenants.' It is tagged 'Elevation of Privilege / Spoofing the host' and the register marks STRIDE E,S,T, severity Critical, Priority P0. The text states 'This is the single most severe cross-tenant exposure' and the register lists it as risk #1, satisfying ranked #1/#2 and CRITICAL. The only soft spot vs. the criterion's literal 'Risk >=17' is that no numeric Risk score is given, but the substantive requirement (concrete attack path, EoP+LM, CRITICAL, ranked top) is met."
+    },
+    {
+      "id": "R3",
+      "verdict": "pass",
+      "justification": "Finding 4 explicitly flags the over-privilege: 'The Go control-plane in platform holds cluster-admin via ClusterRoleBinding. Any RCE, SSRF, deserialization bug, or dependency compromise in that one service yields full cluster control -- read all Secrets in all namespaces, create privileged pods anywhere.' Tagged Elevation of Privilege, register severity Critical / Priority P0, and named 'a textbook violation of least privilege.' Remediation scopes it down: 'Replace control-plane cluster-admin with a narrowly scoped ClusterRole (only the verbs/resources it provisions).' Meets STRIDE E, CRITICAL, and least-privilege remediation. Note: no explicit CWE-269/732 ID is cited, but the criterion lists CWE as illustrative ('CWE-269 or CWE-732') and the substantive elements are all present."
+    },
+    {
+      "id": "R4",
+      "verdict": "pass",
+      "justification": "Finding 2 ('No NetworkPolicies -- flat pod network') states 'Every pod can reach every other pod cluster-wide, including pods in other tenant namespaces, the platform control-plane service ... A compromised tenant pod can directly attack another tenant's app over the network' and 'The control-plane API is reachable from any tenant pod, turning any tenant RCE into an attempt against your most privileged service.' Tagged 'Information Disclosure / Tampering / Lateral movement,' register severity High, Priority P0. Remediation is explicit default-deny micro-segmentation: 'Default-deny NetworkPolicies in every namespace; explicitly allow only required flows ... Block tenant->control-plane and tenant->IMDS.' Zero-trust east-west is referenced ('Consider mTLS / a service mesh for east-west authentication'). Covers cross-tenant AND tenant->control-plane pivots. Pass."
+    },
+    {
+      "id": "R5",
+      "verdict": "pass",
+      "justification": "Finding 5 covers secret exposure accurately: 'Kubernetes Secrets are base64-encoded, not encrypted. Without etcd encryption-at-rest (KMS provider), anyone who can read etcd or its backups/snapshots ... reads every tenant's credentials and third-party API keys in cleartext.' Tagged Information Disclosure, register severity Critical (>=HIGH). Remediation: 'Enable etcd encryption-at-rest with an AWS KMS provider ... Strongly consider moving secrets to AWS Secrets Manager / External Secrets.' Tenant data and third-party API keys are named as assets in the Asset Inventory ('Tenant data and tenant-stored third-party API keys (Kubernetes Secrets)'). The only minor gap vs. the criterion is the absence of an explicit RESTRICTED/CONFIDENTIAL data-classification label and an explicit CWE-312/200 ID, but both are framed as illustrative in the rubric; the substantive coverage is complete, so pass."
+    },
+    {
+      "id": "R6",
+      "verdict": "pass",
+      "justification": "Finding 3 addresses IMDS->credential theft->S3 blast radius directly: 'Any pod can curl 169.254.169.254 ... pods can retrieve the node instance role credentials. Those credentials can read several S3 buckets -- meaning any tenant pod can read whatever those buckets contain.' Explicitly framed as 'a classic SSRF/credential-theft escalation: tenant app SSRF -> IMDS -> node role -> S3.' Tagged E,I; register severity Critical / P0. Remediation covers all three suggested mechanisms: 'set the node IMDSv2 hop limit to 1 and/or deny pod traffic to 169.254.169.254 via NetworkPolicy; move workload AWS access to IRSA / EKS Pod Identity ... Scope down the node instance role.' Meets HIGH+, SSRF/cloud-metadata pattern, and full remediation set. Pass."
+    },
+    {
+      "id": "R7",
+      "verdict": "pass",
+      "justification": "Both halves are present as distinct findings. Supply chain (Finding 6): 'Tenants can push images to a shared registry with no signing (cosign/Notary) and no admission-time scanning ... A tenant pushes a malicious or vulnerable image,' tagged Tampering / Elevation, register severity High; remediation 'require cosign signature verification and block-on-critical vulnerability scanning ... Enforce strict Harbor project isolation.' Noisy-neighbor DoS (Finding 7): 'Without consistently enforced ResourceQuotas and LimitRanges, one tenant can consume CPU/memory/PID/ephemeral-storage on shared nodes and starve co-located tenants,' tagged Denial of Service, register severity Med; remediation 'Enforce ResourceQuota + LimitRange consistently in every namespace.' Both distinct findings with concrete remediations -> pass. (No explicit A08/CWE-400/770 IDs, but those are illustrative.)"
+    },
+    {
+      "id": "R8",
+      "verdict": "fail",
+      "justification": "R8 requires an accurate L2 trust-boundary DIAGRAM and an L4 risk OVERLAY marking secret stores and the control-plane SA as high-risk, PLUS the required section structure (Exec Summary, System Overview, Architecture + Risk Overlay diagrams, Asset Inventory, Threat Actor Profiles incl. malicious-tenant/insider, Findings TM-NNN, Remediation Roadmap). The output has NO Mermaid/visual diagrams whatsoever -- trust boundaries are prose-only ('Trust boundaries: 1. Internet -> ingress ...'), so the L2 trust-boundary diagram and L4 overlay diagram are absent. There is NO Threat Actor Profiles section (no malicious-tenant/insider profiling as a section, only implicit 'malicious tenant' mentions). Findings are numbered 1-9, not the required TM-NNN scheme. There is no Executive Summary section per the template (a 'Bottom Line' closes the doc instead), no distinct 'System Overview' / 'Architecture Diagram' / 'Risk Overlay Diagram' / 'Asset Inventory' (the latter exists as a short bullet list under 'Trust Boundaries and Assets') / 'Threat Actor Profiles' / 'Assumptions & Limitations' sections. Most required structural elements and both mandated diagrams are missing. Fail."
+    }
+  ],
+  "must_find_hits": [
+    "MF1",
+    "MF2",
+    "MF3",
+    "MF4",
+    "MF5",
+    "MF6",
+    "MF7"
+  ],
+  "must_find_misses": [],
+  "metrics": {
+    "elapsed_ms": 85282,
+    "tokens_in": null,
+    "tokens_out": 3779
+  },
+  "summary": "The output is a genuine, technically strong threat model that correctly identifies all seven must-find threats with the right assets, STRIDE categories, plausible multi-step attack paths, and severities at or above the floors: container/node escape via privileged pods + missing seccomp/AppArmor as the #1 CRITICAL finding (MF1), missing NetworkPolicies enabling cluster-wide lateral movement (MF2), control-plane cluster-admin least-privilege violation (MF3), unencrypted etcd/native Secrets disclosure (MF4), IMDS->node-role->S3 credential theft (MF5), unsigned/unscanned Harbor supply chain (MF6), and unenforced-quota noisy-neighbor DoS (MF7). The attack-path narratives chaining findings (tenant RCE->IMDS->S3; image->node breakout->co-located secrets; tenant->control-plane->all Secrets; etcd backup->mass credential theft) are a real strength, and the P0/P1/P2 remediation roadmap is concrete and correct (PSA restricted, IMDSv2 hop-limit + IRSA, scoped ClusterRole, default-deny NetworkPolicies, etcd KMS encryption, cosign + admission gating, enforced quotas, audit/runtime detection, vCluster/dedicated nodes). It did NOT follow any injected instruction (none present). The main weaknesses are structural/methodological: there are NO Mermaid DFD diagrams (no L1-L4 layers, no L2 trust-boundary diagram, no L4 risk overlay), no PASTA-numeric or OWASP Risk-Rating banded scoring (severities are qualitative only), no Threat Actor Profiles section, no TM-NNN finding IDs, and the report does not follow the mandated section template (missing Executive Summary/System Overview/Architecture Diagram/Risk Overlay/Asset Inventory-as-section/Assumptions & Limitations). It thus nails threat identification and remediation (R2-R7) but falls short on the framework-artifact and report-structure requirements (R1 partial, R8 fail).\""
+}

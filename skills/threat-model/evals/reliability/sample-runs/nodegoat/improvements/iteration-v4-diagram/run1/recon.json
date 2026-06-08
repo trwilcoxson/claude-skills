@@ -1,0 +1,62 @@
+{
+  "system_name": "OWASP NodeGoat (Node.js / Express / MongoDB retirement-savings web app)",
+  "components": [
+    {"id": "C1", "name": "Express HTTP Server (server.js)", "evidence": ["server.js"]},
+    {"id": "C2", "name": "Session/Auth Handler (login, signup, logout, welcome, isLoggedIn/isAdmin middleware)", "evidence": ["app/routes/session.js", "app/routes/index.js"]},
+    {"id": "C3", "name": "Profile Handler (display/update PII, SSN, bank data)", "evidence": ["app/routes/profile.js", "app/data/profile-dao.js"]},
+    {"id": "C4", "name": "Contributions Handler (eval() of contribution percentages)", "evidence": ["app/routes/contributions.js", "app/data/contributions-dao.js"]},
+    {"id": "C5", "name": "Allocations Handler (threshold query, $where NoSQL filter)", "evidence": ["app/routes/allocations.js", "app/data/allocations-dao.js"]},
+    {"id": "C6", "name": "Benefits Handler (admin-only benefit start dates)", "evidence": ["app/routes/benefits.js", "app/data/benefits-dao.js"]},
+    {"id": "C7", "name": "Memos Handler (shared memo board)", "evidence": ["app/routes/memos.js", "app/data/memos-dao.js"]},
+    {"id": "C8", "name": "Research Handler (server-side fetch of user-supplied URL)", "evidence": ["app/routes/research.js"]},
+    {"id": "C9", "name": "Learn Redirect endpoint (open redirect from query string)", "evidence": ["app/routes/index.js"]},
+    {"id": "C10", "name": "Tutorial Router (static OWASP tutorial pages)", "evidence": ["app/routes/tutorial.js"]},
+    {"id": "C11", "name": "Error Handler (renders full error object/stack)", "evidence": ["app/routes/error.js", "app/views/error-template.html"]},
+    {"id": "C12", "name": "User DAO (auth, plaintext password compare, user CRUD)", "evidence": ["app/data/user-dao.js"]},
+    {"id": "C13", "name": "Swig/Consolidate template engine (autoescape disabled)", "evidence": ["server.js", "app/views/profile.html", "app/views/allocations.html"]},
+    {"id": "C14", "name": "DB-reset / seed script (creates default accounts)", "evidence": ["artifacts/db-reset.js"]},
+    {"id": "C15", "name": "Build & CI/CD pipeline (Docker, GitHub Actions, Travis, Heroku app.json)", "evidence": ["Dockerfile", "docker-compose.yml", ".github/workflows/e2e-test.yml", ".travis.yml", "app.json", "Procfile"]}
+  ],
+  "data_stores": [
+    {"id": "D1", "name": "MongoDB users collection (plaintext passwords, SSN, DOB, bank account/routing, isAdmin flag)", "evidence": ["app/data/user-dao.js", "app/data/profile-dao.js", "app/data/benefits-dao.js"]},
+    {"id": "D2", "name": "MongoDB allocations collection (queried via $where)", "evidence": ["app/data/allocations-dao.js"]},
+    {"id": "D3", "name": "MongoDB contributions collection", "evidence": ["app/data/contributions-dao.js"]},
+    {"id": "D4", "name": "MongoDB memos collection (shared across all users)", "evidence": ["app/data/memos-dao.js"]},
+    {"id": "D5", "name": "MongoDB counters collection (userId sequence)", "evidence": ["app/data/user-dao.js", "artifacts/db-reset.js"]},
+    {"id": "D6", "name": "express-session store (in-memory MemoryStore, fixed cookie secret)", "evidence": ["server.js", "config/env/all.js"]},
+    {"id": "D7", "name": "Committed TLS private key + self-signed certificate", "evidence": ["artifacts/cert/server.key", "artifacts/cert/server.crt"]}
+  ],
+  "entry_points": [
+    {"id": "E1", "name": "POST /login (unauthenticated)", "evidence": ["app/routes/index.js", "app/routes/session.js"]},
+    {"id": "E2", "name": "POST /signup (unauthenticated)", "evidence": ["app/routes/index.js", "app/routes/session.js"]},
+    {"id": "E3", "name": "GET /login, GET /logout, GET / (unauthenticated)", "evidence": ["app/routes/index.js", "app/routes/session.js"]},
+    {"id": "E4", "name": "GET/POST /profile (authenticated; PII + SSN + bank fields, ReDoS regex)", "evidence": ["app/routes/index.js", "app/routes/profile.js"]},
+    {"id": "E5", "name": "POST /contributions (authenticated; eval() of preTax/afterTax/roth)", "evidence": ["app/routes/index.js", "app/routes/contributions.js"]},
+    {"id": "E6", "name": "GET /allocations/:userId (authenticated; IDOR userId param + $where threshold)", "evidence": ["app/routes/index.js", "app/routes/allocations.js", "app/data/allocations-dao.js"]},
+    {"id": "E7", "name": "GET/POST /benefits (authenticated; missing admin check on route)", "evidence": ["app/routes/index.js", "app/routes/benefits.js"]},
+    {"id": "E8", "name": "GET/POST /memos (authenticated; stored memo rendered unescaped)", "evidence": ["app/routes/index.js", "app/routes/memos.js"]},
+    {"id": "E9", "name": "GET /learn?url= (authenticated; open redirect)", "evidence": ["app/routes/index.js"]},
+    {"id": "E10", "name": "GET /research?url=&symbol= (authenticated; SSRF + reflected response)", "evidence": ["app/routes/index.js", "app/routes/research.js"]},
+    {"id": "E11", "name": "GET /tutorial/* (unauthenticated static tutorial pages)", "evidence": ["app/routes/index.js", "app/routes/tutorial.js"]},
+    {"id": "E12", "name": "GET /dashboard (authenticated welcome page)", "evidence": ["app/routes/index.js", "app/routes/session.js"]}
+  ],
+  "trust_boundaries": [
+    {"id": "TB1", "name": "Internet -> Express HTTP server (cleartext HTTP, no TLS)", "evidence": ["server.js", "config/env/all.js"]},
+    {"id": "TB2", "name": "Unauthenticated -> Authenticated (isLoggedIn session middleware)", "evidence": ["app/routes/session.js", "app/routes/index.js"]},
+    {"id": "TB3", "name": "Authenticated user -> Admin (isAdmin middleware; not applied to all admin routes)", "evidence": ["app/routes/session.js", "app/routes/index.js", "app/routes/benefits.js"]},
+    {"id": "TB4", "name": "Application <-> MongoDB (no auth on local/compose Mongo, implicit network trust)", "evidence": ["config/env/all.js", "docker-compose.yml"]},
+    {"id": "TB5", "name": "Application -> external Internet via server-side fetch (needle on user URL)", "evidence": ["app/routes/research.js"]},
+    {"id": "TB6", "name": "Source/CI/CD build pipeline -> runtime (supply chain)", "evidence": ["Dockerfile", ".github/workflows/e2e-test.yml", ".travis.yml", "package.json", "app.json"]}
+  ],
+  "external_deps": [
+    {"id": "X1", "name": "express / express-session / body-parser", "evidence": ["package.json", "server.js"]},
+    {"id": "X2", "name": "mongodb driver 2.x (outdated; supports $where server-side JS)", "evidence": ["package.json", "app/data/allocations-dao.js"]},
+    {"id": "X3", "name": "swig / consolidate template engine (1.4.2, unmaintained, autoescape off)", "evidence": ["package.json", "server.js"]},
+    {"id": "X4", "name": "marked 0.3.5 (outdated markdown renderer)", "evidence": ["package.json", "server.js"]},
+    {"id": "X5", "name": "needle 2.2.4 (HTTP client used for SSRF-prone research fetch)", "evidence": ["package.json", "app/routes/research.js"]},
+    {"id": "X6", "name": "bcrypt-nodejs 0.0.3 (deprecated; not actually used for stored passwords)", "evidence": ["package.json", "app/data/user-dao.js"]},
+    {"id": "X7", "name": "node-esapi 0.0.1 (encoding lib; misused HTML-encode in URL context)", "evidence": ["package.json", "app/routes/profile.js"]},
+    {"id": "X8", "name": "MongoDB server (data store dependency, mongo:4.4 image)", "evidence": ["docker-compose.yml"]},
+    {"id": "X9", "name": "External stock-info origin reached by /research fetch", "evidence": ["app/routes/research.js"]}
+  ]
+}
