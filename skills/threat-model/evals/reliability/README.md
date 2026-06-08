@@ -61,7 +61,33 @@ python3 run.py report --runs-root runs/nodegoat --repo /tmp/nodegoat \
 
 `run.py check --run <dir> --repo <path>` runs just the deterministic layer on a single run.
 
-Committed real runs are under [`sample-runs/`](sample-runs/): NodeGoat (web app, with a two-iteration
-[improvement loop](sample-runs/nodegoat/improvements/LOOP-CLOSURE.md)), TerraGoat (Terraform IaC), and
-crAPI (~900-file polyglot microservices + LLM agent) — same harness, three different system types, no
-per-target tuning.
+Committed real runs are under [`sample-runs/`](sample-runs/): NodeGoat (web app, with a multi-iteration
+[improvement loop](sample-runs/nodegoat/improvements/LOOP-CLOSURE.md) — and the
+[product-grade visuals verification](sample-runs/nodegoat/improvements/iteration-v5-product-grade/NOTE.md)),
+TerraGoat (Terraform IaC), and crAPI (~900-file polyglot microservices + LLM agent) — same harness,
+three different system types, no per-target tuning.
+
+## Observability — `tm-observe`
+
+Make the multi-agent run transparent. As personas run they emit a `tm.run-event/1` stream
+(`events.ndjson`, a projection of each Execution Log); `tm_observe.py` renders an uncluttered
+"what agent is doing what" view — pure function of the stream, same input → byte-identical output.
+
+```bash
+python3 run.py observe --transcripts <workflow-transcript-dir> --run <id> [--tree|--once]
+python3 tm_observe.py events.ndjson [--tail|--tree|--once]
+```
+
+See [`../../references/pipeline-observability.md`](../../references/pipeline-observability.md).
+
+## Coverage ledger (proposed)
+
+`coverage_checks.py` (per [`openspec/changes/add-coverage-ledger`](../../../../openspec/changes/add-coverage-ledger/))
+verifies the skill's `coverage.json` ledger structurally: every applicable production-grade taxonomy
+item reached a terminal state (`present`/`partial`/`absent`/`not-applicable`/`unknown`), `present`
+cites a resolving source, `unknown` carries a note — never requiring a specific item present.
+
+## Design
+
+The whole harness is specified in [`openspec/`](../../../../openspec/) — see its README for the
+capability map and the determinism principle.
