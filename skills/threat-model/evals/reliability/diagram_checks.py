@@ -91,7 +91,8 @@ def _section(text: str, *keywords: str) -> str:
 
 
 def _typed(blocks: list[str], *types: str) -> list[str]:
-    return [b for b in blocks if any(re.search(r"%%\s*type:\s*" + re.escape(t), b.lower()) for t in types)]
+    pats = [r"%%\s*type:\s*" + re.escape(t).replace(r"\-", "[- ]") for t in types]  # tolerate space or hyphen
+    return [b for b in blocks if any(re.search(p, b.lower()) for p in pats)]
 
 
 AUTH_VOCAB = ("login", "signin", "sign-in", "oauth", "oidc", "jwt", "saml", "session", "mfa",
@@ -146,7 +147,7 @@ def analytical_checks(report_text: str, blocks: list[str], recon: dict | None, f
                      for e in recon.get("entry_points", []))
     auth_finding = any("S" in f.get("stride_lm", []) or "E" in f.get("stride_lm", []) for f in findings)
     if auth_entry or auth_finding:
-        seqs = [b for b in blocks if "sequencediagram" in b.lower()[:60]]
+        seqs = [b for b in blocks if "sequencediagram" in b.lower()]
         if not seqs:
             D("no-auth-sequence", "auth surface present but no sequenceDiagram rendered")
         else:
