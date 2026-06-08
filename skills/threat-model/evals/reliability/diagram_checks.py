@@ -57,6 +57,172 @@ def _nodes(block: str) -> list[str]:
     return out
 
 
+def _md_tables(text: str) -> list[dict]:
+    """Extract GitHub-flavored markdown tables as {header:[...], rows:[[...]]}."""
+    out, lines, i = [], text.splitlines(), 0
+    while i < len(lines):
+        sep = i + 1 < len(lines) and re.match(r"^\s*\|?[\s:|-]*-[\s:|-]*\|?\s*$", lines[i + 1])
+        if "|" in lines[i] and sep:
+            header = [c.strip() for c in lines[i].strip().strip("|").split("|")]
+            rows, j = [], i + 2
+            while j < len(lines) and "|" in lines[j] and lines[j].strip():
+                rows.append([c.strip() for c in lines[j].strip().strip("|").split("|")])
+                j += 1
+            out.append({"header": header, "rows": rows})
+            i = j
+        else:
+            i += 1
+    return out
+
+
+def _section(text: str, *keywords: str) -> str:
+    """Text from the first heading containing any keyword up to the next heading."""
+    out, capture = [], False
+    for ln in text.splitlines():
+        if re.match(r"^#{1,6}\s", ln):
+            if capture:
+                break
+            if any(k.lower() in ln.lower() for k in keywords):
+                capture = True
+            continue
+        if capture:
+            out.append(ln)
+    return "\n".join(out)
+
+
+def _typed(blocks: list[str], *types: str) -> list[str]:
+    return [b for b in blocks if any(re.search(r"%%\s*type:\s*" + re.escape(t), b.lower()) for t in types)]
+
+
+AUTH_VOCAB = ("login", "signin", "sign-in", "oauth", "oidc", "jwt", "saml", "session", "mfa",
+              "otp", "auth", "token", "apikey", "api key", "password")
+
+
+def analytical_checks(report_text: str, blocks: list[str], recon: dict | None, findings_doc: dict | None) -> dict[str, Any]:
+    """Presence/shape/consistency of the analytical & communication visuals.
+
+    Each visual is gated by a precondition derived from SKILL-DECLARED facts (kill_chains, roles,
+    dep manifest, finding STRIDE/MITRE) — never from inferring content. Structure-only: a visual that
+    is present and internally consistent passes even if its analysis is wrong (the judge handles that).
+    """
+    defects: list[dict[str, str]] = []
+    warnings: list[str] = []
+
+    def D(code: str, detail: str) -> None:
+        defects.append({"layer": "diagram", "code": code, "detail": detail})
+
+    recon = recon or {}
+    findings_doc = findings_doc or {}
+    findings = findings_doc.get("findings", [])
+    kill_chains = findings_doc.get("kill_chains", [])
+    roles = recon.get("roles", [])
+    deps = recon.get("external_deps", [])
+    recon_ids = {e["id"] for b in ("components", "data_stores", "entry_points", "trust_boundaries", "external_deps")
+                 for e in recon.get(b, []) if isinstance(e, dict) and "id" in e}
+    all_mitre = {m for f in findings for m in f.get("mitre", [])}
+    present: list[str] = []
+
+    # attack tree + attack-flow — gate: >=3 declared kill chains
+    if len(kill_chains) >= 3:
+        trees = [b for b in blocks if re.search(r"\{\s*(AND|OR)\s*\}", b)] + _typed(blocks, "attack-tree")
+        trees = list(dict.fromkeys(trees))
+        if not trees:
+            D("no-attack-tree", f"{len(kill_chains)} kill chains declared but no attack tree (flowchart with AND/OR gates)")
+        else:
+            present.append("attack-tree")
+            extra = {t for b in trees for t in re.findall(r"T\d{4}(?:\.\d{3})?", b)} - all_mitre
+            if extra:
+                warnings.append(f"attack tree references techniques absent from findings: {sorted(extra)[:5]}")
+            if len(trees) < min(len(kill_chains), 5):
+                warnings.append(f"{len(trees)} attack tree(s) for {len(kill_chains)} declared kill chains")
+        flows = _typed(blocks, "attack-flow", "kill-chain")
+        if not flows:
+            D("no-attack-flow", f"{len(kill_chains)} kill chains declared but no attack-flow / kill-chain graph")
+        else:
+            present.append("attack-flow")
+
+    # auth sequence — gate: auth surface (entry-point vocab OR S/E finding); name match may only SKIP
+    auth_entry = any(any(k in (e.get("name", "") + " " + " ".join(e.get("evidence", []))).lower() for k in AUTH_VOCAB)
+                     for e in recon.get("entry_points", []))
+    auth_finding = any("S" in f.get("stride_lm", []) or "E" in f.get("stride_lm", []) for f in findings)
+    if auth_entry or auth_finding:
+        seqs = [b for b in blocks if "sequencediagram" in b.lower()[:60]]
+        if not seqs:
+            D("no-auth-sequence", "auth surface present but no sequenceDiagram rendered")
+        else:
+            present.append("auth-sequence")
+            b = seqs[0]
+            parts = re.findall(r"participant\s+(\w+)", b)
+            if len(parts) < 2:
+                D("auth-sequence-thin", f"sequence diagram has {len(parts)} participant(s) (<2)")
+            if not re.search(r"--?>>?|->|-x", b):
+                D("auth-sequence-no-arrows", "sequence diagram has no message arrows")
+            opens = len(re.findall(r"\b(?:alt|opt|loop|par|rect)\b", b))
+            if opens and len(re.findall(r"\bend\b", b)) < opens:
+                warnings.append("sequence diagram block keywords (alt/opt/.../end) unbalanced")
+            if recon_ids and parts and all(p not in recon_ids for p in parts):
+                warnings.append("sequence participants do not map to recon ids")
+
+    # STRIDE-per-element coverage matrix — gate: always
+    stride = {"S", "T", "R", "I", "D", "E", "LM"}
+    matrix = next((t for t in _md_tables(report_text) if stride.issubset({c.strip().upper() for c in t["header"]})), None)
+    if not matrix:
+        D("no-stride-matrix", "no STRIDE-per-element coverage matrix (table with S,T,R,I,D,E,LM columns)")
+    else:
+        present.append("stride-matrix")
+        blanks = sum(1 for r in matrix["rows"] for c in r[1:] if not c.strip())
+        if blanks:
+            D("stride-matrix-blanks", f"STRIDE matrix has {blanks} blank cell(s); every cell must be TM-id / n/a / clean")
+        body = " ".join(c for r in matrix["rows"] for c in r)
+        miss = [f["id"] for f in findings if f["id"] not in body]
+        if miss:
+            warnings.append(f"{len(miss)} finding(s) not placed in STRIDE matrix: {miss[:5]}")
+
+    # L×I risk heat map — gate: >=1 scored finding
+    scored = [f for f in findings if isinstance(f.get("likelihood"), int) and isinstance(f.get("impact"), int)]
+    if scored:
+        hm = _section(report_text, "heat map", "heatmap", "risk matrix", "likelihood")
+        if not hm or not re.search(r"TM-\d{3}", hm):
+            D("no-risk-heatmap", "scored findings exist but no Likelihood×Impact heat map plotting them")
+        else:
+            present.append("risk-heatmap")
+            miss = [f["id"] for f in scored if f["id"] not in hm]
+            if miss:
+                warnings.append(f"{len(miss)} scored finding(s) not plotted on heat map: {miss[:5]}")
+
+    # MITRE ATT&CK technique layer — gate: >=1 finding with a technique
+    if all_mitre:
+        nav = [b for b in re.findall(r"```json\s(.*?)```", report_text, re.DOTALL) if '"techniques"' in b and '"domain"' in b]
+        att = _section(report_text, "att&ck", "attack navigator", "mitre att", "technique heatmap")
+        if not nav and not re.search(r"T\d{4}", att):
+            D("no-attack-layer", "findings map to ATT&CK techniques but no ATT&CK technique layer/heatmap rendered")
+        else:
+            present.append("attack-layer")
+            shown = {t for src in ([att] + nav) for t in re.findall(r"T\d{4}(?:\.\d{3})?", src)}
+            if all_mitre - shown:
+                warnings.append(f"ATT&CK layer missing techniques from findings: {sorted(all_mitre - shown)[:5]}")
+
+    # RBAC / authorization matrix — gate: >=2 declared roles
+    if len(roles) >= 2:
+        rbac = _section(report_text, "rbac", "authorization matrix", "access control matrix", "role-by-resource")
+        if not rbac or not re.search(r"anon|unauth", rbac.lower()):
+            D("no-rbac-matrix", f"{len(roles)} roles declared but no RBAC/authorization matrix with an anonymous row")
+        else:
+            present.append("rbac-matrix")
+
+    # SBOM / dependency graph — gate: external deps backed by a manifest
+    if deps and any(e.get("manifest") for e in deps):
+        sbom = _typed(blocks, "sbom", "dependency")
+        sec = _section(report_text, "sbom", "dependency", "software bill")
+        if not sbom and not (sec and "externaldep" in sec.lower()):
+            D("no-sbom-graph", "external dependencies with a manifest but no SBOM / dependency graph")
+        else:
+            present.append("sbom")
+
+    return {"defects": defects, "warnings": warnings,
+            "stats": {"analytical_present": present, "kill_chains": len(kill_chains), "roles": len(roles)}}
+
+
 def check(report_text: str, recon: dict | None, findings_doc: dict | None) -> dict[str, Any]:
     defects: list[dict[str, str]] = []
     warnings: list[str] = []
@@ -147,6 +313,11 @@ def check(report_text: str, recon: dict | None, findings_doc: dict | None) -> di
             elif len(covered_hi) < len(hi_tm):
                 warn(f"{len(hi_tm) - len(covered_hi)}/{len(hi_tm)} HIGH+ findings not annotated in L4 overlay")
 
+    # analytical & communication visuals (gated by skill-declared facts; structure-only)
+    an = analytical_checks(report_text, blocks, recon, findings_doc)
+    defects.extend(an["defects"])
+    warnings.extend(an["warnings"])
+
     diag_defect = bool(defects)
     return {
         "defects": defects,
@@ -154,12 +325,15 @@ def check(report_text: str, recon: dict | None, findings_doc: dict | None) -> di
                   "edges": n_edges, "edges_annotated_frac": ann_frac,
                   "components": len(comp_nodes), "ownership_frac": own_frac,
                   "subgraphs": subgraphs, "l4_links_findings": bool(re.search(r"TM-\d{3}", l4)),
+                  "visuals_present": an["stats"]["analytical_present"],
+                  "kill_chains": an["stats"]["kill_chains"],
                   "warnings": warnings},
         "scores": {"diagram_pass": not diag_defect,
                    "required_layers_present": not missing,
                    "flows_annotated": ann_frac,
                    "component_metadata": own_frac,
-                   "risk_layer_linked": "L4" in present and bool(re.search(r"TM-\d{3}", l4))},
+                   "risk_layer_linked": "L4" in present and bool(re.search(r"TM-\d{3}", l4)),
+                   "analytical_visuals": an["stats"]["analytical_present"]},
     }
 
 

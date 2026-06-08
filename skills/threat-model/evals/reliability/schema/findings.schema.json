@@ -38,6 +38,20 @@
     "no_issue_surface": {
       "type": "array", "items": { "type": "string" },
       "description": "recon surface ids deliberately judged to carry no finding (so coverage can distinguish 'examined, clean' from 'missed')"
+    },
+    "kill_chains": {
+      "type": "array",
+      "description": "multi-step attack chains the analysis identified (the LLM's judgment). Verification requires an attack tree and attack-flow per declared chain; the eval never clusters findings itself.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "goal", "steps"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^KC[0-9]+$" },
+          "goal": { "type": "string", "description": "the attacker objective at the root of the chain" },
+          "steps": { "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^TM-[0-9]{3}$" }, "description": "member finding ids, in order" }
+        }
+      }
     }
   }
 }

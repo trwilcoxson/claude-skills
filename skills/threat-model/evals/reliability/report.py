@@ -52,13 +52,15 @@ def _diagram(runs: list[dict]) -> str:
         rows += (f"<tr><td>run {i+1}</td><td>{_e(ds.get('layers'))}</td>"
                  f"<td class='num'>{_pct(ds.get('edges_annotated_frac'))}</td>"
                  f"<td class='num'>{_pct(ds.get('ownership_frac'))}</td>"
-                 f"<td class='num'>{ds.get('subgraphs', '—')}</td>"
-                 f"<td>{'yes' if ds.get('l4_links_findings') else '<span class=bad>no</span>'}</td></tr>")
-    return ("<p>The diagram is verified against the skill's own spec: required layers (L1–L4 per scaling), "
-            "typed/annotated flows (§4), trust-boundary subgraphs, component ownership markers (§7), and an "
-            "L4 risk overlay linked to the findings (§5). Semantic correctness is left to the diagram judge.</p>"
-            "<table><thead><tr><th>Run</th><th>Layers present</th><th>Flows annotated</th>"
-            "<th>Component metadata</th><th>Trust-boundary subgraphs</th><th>L4→findings linked</th></tr></thead>"
+                 f"<td>{'yes' if ds.get('l4_links_findings') else '<span class=bad>no</span>'}</td>"
+                 f"<td>{_e(', '.join(ds.get('visuals_present', [])) or '—')}</td></tr>")
+    return ("<p>The diagram set is verified against the skill's own spec: required layers (L1–L4 per scaling), "
+            "typed/annotated flows (§4), trust-boundary subgraphs, ownership markers (§7), an L4 overlay linked "
+            "to findings (§5), plus the analytical/communication visuals (attack tree, auth sequence, "
+            "STRIDE-per-element matrix, L×I heat map, ATT&CK layer, attack-flow, RBAC matrix, SBOM) each gated by "
+            "its precondition. Presence/shape/consistency only — correctness is the diagram judge's job.</p>"
+            "<table><thead><tr><th>Run</th><th>Layers</th><th>Flows annot.</th>"
+            "<th>Ownership</th><th>L4→findings</th><th>Analytical visuals present</th></tr></thead>"
             f"<tbody>{rows}</tbody></table>")
 
 
