@@ -2,51 +2,12 @@
 
 Custom skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) that provide specialized workflows, domain expertise, and tool integrations.
 
-## Design & specification (OpenSpec)
-
-The threat-model skill and its evaluation harness are designed **spec-first** with
-[OpenSpec](https://github.com/Fission-AI/OpenSpec). The whole design — what each capability must do,
-expressed as `Requirement`/`Scenario` (WHEN/THEN) — lives in [`openspec/`](openspec/) and is the
-front door for understanding the system.
-
-```bash
-openspec list          # active change proposals + task status
-openspec view          # interactive dashboard of specs and changes
-openspec show <change> # a proposal + its spec deltas
-```
-
-One principle runs through every capability: **the LLM/agents do all reasoning and generation; the
-templates and evals only provide and enforce structure (the same kind of result each run) — never the
-answer.**
-
-| Change ([`openspec/changes/`](openspec/changes/)) | Capabilities | What it specifies |
-|---|---|---|
-| [`add-product-grade-diagrams`](openspec/changes/add-product-grade-diagrams/) | `threat-model-visuals`, `diagram-verification` | the 8 product-grade visuals (attack tree, attack flow, auth sequence, STRIDE-per-element matrix, L×I risk heat map, MITRE ATT&CK layer, RBAC matrix, SBOM) the skill renders, and the structure-only checks the eval enforces |
-| [`add-pipeline-observability`](openspec/changes/add-pipeline-observability/) | `pipeline-observability` | a run-event stream + a deterministic renderer for an uncluttered "what agent is doing what" view |
-| [`add-coverage-ledger`](openspec/changes/add-coverage-ledger/) | `completeness-coverage`, `coverage-verification` | a coverage ledger so agents attempt every production-grade item and track `present` / `absent` / `not-applicable` / `unknown` (with evidence), surfacing gaps instead of hiding them |
+> **Security assessment moved.** The threat-model skill and the paired compliance / privacy
+> assessment skills, their specialist agents, the evaluation harness, and the OpenSpec design now live
+> in their own project: **[trwilcoxson/threat-model-suite](https://github.com/trwilcoxson/threat-model-suite)**.
+> This repo now holds general-purpose skills only.
 
 ## Available Skills
-
-### `threat-model` — Architectural Threat Modeling
-
-Produces architectural threat models with Mermaid data flow diagrams, STRIDE-LM threat identification, PASTA attack simulation, and OWASP Risk Rating prioritization. Orchestrates a pipeline of [specialist agents](https://github.com/trwilcoxson/claude-agents) for comprehensive security assessments.
-
-**Features:**
-- 8-phase structured methodology (reconnaissance through final report)
-- Solo mode (threat model + report) or Team mode (adds privacy, compliance, code review agents)
-- Mermaid DFDs with 4-layer structural + risk overlay approach, plus a product-grade visual suite: attack trees, attack-flow/kill-chain graphs, auth sequences, STRIDE-per-element coverage matrix, Likelihood×Impact risk heat map, MITRE ATT&CK technique layer, RBAC matrix, and SBOM/dependency graph
-- A coverage ledger so the model attempts every production-grade item and records what it found, what's absent, and what it couldn't determine from the sources (gaps surfaced, not hidden)
-- Four output formats: HTML (interactive), Word (.docx), PDF, and Executive PPTX
-- Cross-agent validation and deduplication, with a run-event stream + `tm-observe` renderer for transparent stage/persona progress
-
-**Usage:**
-```
-Run a threat model on [target]
-```
-
-**Dependencies:** Requires [claude-agents](https://github.com/trwilcoxson/claude-agents) for the specialist agent definitions. See the [architecture doc](https://github.com/trwilcoxson/claude-agents/blob/main/docs/ARCHITECTURE.md) for the full system design.
-
-**Evals:** [`skills/threat-model/evals/`](skills/threat-model/evals/) is a **reference-free reliability harness** — point the skill at any real repository and it checks reliability with no per-target answer key. Deterministic layers enforce *structure* only: report structure / consistency (`severity == band(L×I)`) / grounding against the real repo / coverage of the system's own discovered surface / **diagram verification** (the 4 DFD layers + the 8 product-grade visuals, presence + shape + consistency, each gated by a precondition). LLM-judged layers assess *correctness*: reasoning quality, adversarial recall (a red team finds what the model missed), recon completeness, diagram correctness, and cross-run stability. A run-event stream powers `tm-observe` for transparent per-stage/persona progress. Real runs are in [`reliability/sample-runs/`](skills/threat-model/evals/reliability/sample-runs/) on three system types — a web app (OWASP NodeGoat, with a measured multi-iteration skill-improvement loop), Terraform IaC (TerraGoat), and a ~900-file polyglot microservices app with an LLM agent (OWASP crAPI) — same harness, no per-target tuning. The harness is specified in [`openspec/`](openspec/).
 
 ### `/python-quality` — Python Code Quality Pipeline
 
@@ -83,8 +44,6 @@ Assess, design, and score agentic AI systems against a comprehensive enterprise-
 - **DESIGN** — Architect a new agent system against the requirements framework
 - **CHECKLIST** — Lightweight quick-reference scoring (30 MUST + 36 SHOULD items)
 
-**Categories:** Agent Architecture, Reasoning and Decision Logic, Memory and State, Tool Use and Integration, Multi-Agent Coordination, Evaluation and Testing, Observability and Monitoring, Safety and Security, Ethics and Responsible AI, Deployment and Operations, Documentation and Reproducibility, Governance and Compliance.
-
 **Usage:**
 ```
 Assess my agent system against agentic AI requirements
@@ -96,74 +55,25 @@ Run the agentic AI checklist against this project
 
 Comprehensive architecture assistant covering the full lifecycle of software design decisions. Auto-detects 7 modes based on user intent, with 12 deep-reference files loaded progressively.
 
-**Modes:**
-- **PLAN** — Greenfield architecture design (7 phases: context → QA workshop → pattern selection → domain decomposition → spec → governance → output)
-- **REVIEW** — Architecture assessment with health rating (CRITICAL → EXCELLENT)
-- **SCORECARD** — Elite 9-section design review (53 items, 4 STOP-SHIP triggers)
-- **DECIDE** — Architecture decision records (MADR 3.0)
-- **DOCUMENT** — C4 diagrams, arc42, ADRs from codebase analysis
-- **DEBT** — Technical debt assessment with SQALE taxonomy and quantification
-- **MIGRATE** — Migration planning (Strangler Fig, Branch by Abstraction, Parallel Run)
-
-**Key principles:** Modular monolith as default, boundaries first, reliability as a feature, automated fitness functions, SLO-driven observability. Covers 2026 patterns including cell-based architecture, AI-native architecture, and platform engineering.
+**Modes:** PLAN (greenfield design), REVIEW (health rating), SCORECARD (elite 9-section review), DECIDE (ADRs, MADR 3.0), DOCUMENT (C4/arc42/ADRs from code), DEBT (SQALE technical-debt assessment), MIGRATE (Strangler Fig, Branch by Abstraction, Parallel Run).
 
 **Usage:**
 ```
 Design the architecture for [system]
 Review the architecture of this codebase
 Run the architecture scorecard against this system
-Should I use microservices or a modular monolith?
-Assess the technical debt in this project
 Plan a migration from monolith to microservices
 ```
 
 ## Installation
 
-### threat-model
-
-The threat-model skill is installed as a Claude Code skill (not a slash command). Copy the skill directory:
+Each skill is a directory you copy into your Claude Code skills folder:
 
 ```bash
-# Global
-cp -r skills/threat-model ~/.claude/skills/threat-model
-```
-
-You also need the [specialist agents](https://github.com/trwilcoxson/claude-agents) installed. See that repo's README for agent installation.
-
-### python-quality
-
-Copy the skill directory:
-
-```bash
-# Global (available in all projects)
-cp -r skills/python-quality ~/.claude/skills/python-quality
-
-# Project-specific
-cp -r skills/python-quality .claude/skills/python-quality
-```
-
-### agentic-ai-requirements
-
-Copy the skill directory:
-
-```bash
-# Global (available in all projects)
+# Global (all projects)
+cp -r skills/python-quality          ~/.claude/skills/python-quality
 cp -r skills/agentic-ai-requirements ~/.claude/skills/agentic-ai-requirements
-
-# Project-specific
-cp -r skills/agentic-ai-requirements .claude/skills/agentic-ai-requirements
-```
-
-### software-architect
-
-Copy the skill directory:
-
-```bash
-# Global (available in all projects)
-cp -r skills/software-architect ~/.claude/skills/software-architect
-
-# Project-specific
-cp -r skills/software-architect .claude/skills/software-architect
+cp -r skills/software-architect      ~/.claude/skills/software-architect
 ```
 
 Then restart Claude Code or start a new session.
@@ -171,29 +81,20 @@ Then restart Claude Code or start a new session.
 ## Structure
 
 ```
-openspec/                 # spec-first design (the front door)
-  changes/                # active change proposals (proposal + spec deltas + design + tasks)
-  specs/                  # consolidated capability specs (after changes are archived)
 skills/
-  threat-model/
-    SKILL.md              # Orchestration guide + 8-phase methodology
-    references/           # frameworks, mermaid spec/layers/diagrams, analytical-visuals,
-                          #   report-template, checklists, pipeline-observability
-    evals/reliability/    # reference-free reliability + diagram + coverage verification,
-                          #   tm-observe renderer, schemas, judge prompts, sample-runs/
-  agentic-ai-requirements/
-    SKILL.md              # 3-mode assessment framework with progressive reference loading
-    references/           # 8 reference files (requirements, patterns, safety, compliance, anti-patterns)
   python-quality/
     python-quality.md     # The skill file
+  agentic-ai-requirements/
+    SKILL.md              # 3-mode assessment framework with progressive reference loading
+    references/           # requirements, patterns, safety, compliance, anti-patterns
   software-architect/
     SKILL.md              # 7-mode architecture assistant with progressive reference loading
-    references/           # 12 reference files (patterns, C4, ADR, arc42, debt, fitness, migration)
+    references/           # patterns, C4, ADR, arc42, debt, fitness, migration
 ```
 
 ## Related
 
-- **[claude-agents](https://github.com/trwilcoxson/claude-agents)** — Specialist agent definitions for the threat-model pipeline (security-architect, report-analyst, code-review-agent, privacy-agent, grc-agent, validation-specialist). Includes the [architecture design document](https://github.com/trwilcoxson/claude-agents/blob/main/docs/ARCHITECTURE.md).
+- **[threat-model-suite](https://github.com/trwilcoxson/threat-model-suite)** — the agentic security-assessment system (threat modeling + privacy + compliance), its specialist agents, the reference-free evaluation harness, and the OpenSpec design.
 
 ## License
 
