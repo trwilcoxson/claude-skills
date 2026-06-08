@@ -18,8 +18,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import checks
+import events as events_mod
 import report as report_mod
 import stability as stability_mod
+import tm_observe
 
 HERE = Path(__file__).resolve().parent
 
@@ -88,6 +90,16 @@ def cmd_report(a) -> None:
               f"(jaccard {stab['mean_pairwise_jaccard']})")
 
 
+def cmd_observe(a) -> None:
+    """Derive a run-event stream from a workflow transcript dir and render it (the 'what agent is
+    doing what' view). Pure presentation — see references/pipeline-observability.md."""
+    evs = events_mod.from_transcripts(a.transcripts, a.run)
+    if a.out:
+        events_mod.write(a.out, evs)
+    view = tm_observe.tree if a.tree else tm_observe.once if a.once else tm_observe.tail
+    print(view(evs))
+
+
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -98,6 +110,12 @@ def main() -> None:
     pr.add_argument("--target", required=True); pr.add_argument("--source", default="")
     pr.add_argument("--agents", default=None); pr.add_argument("--out", default="reliability.html")
     pr.set_defaults(func=cmd_report)
+    po = sub.add_parser("observe")
+    po.add_argument("--transcripts", required=True); po.add_argument("--run", default="run")
+    po.add_argument("--out", default=None)
+    g = po.add_mutually_exclusive_group()
+    g.add_argument("--tree", action="store_true"); g.add_argument("--once", action="store_true")
+    po.set_defaults(func=cmd_observe)
     a = p.parse_args(); a.func(a)
 
 

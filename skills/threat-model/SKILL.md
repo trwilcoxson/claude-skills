@@ -109,6 +109,14 @@ flowchart TD
 - Report-analyst writes a dedicated `report-generation-log.md` (per-deliverable status, diagram rendering results, HTML validation checks)
 - Parent orchestrator writes `pipeline-summary.md` (agent execution summary, deliverable verification, overall health)
 
+**Run-event stream (observability).** As it runs, the parent orchestrator also appends to
+`{output_dir}/events.ndjson` a `tm.run-event/1` line — a `start` before each Task spawn and a `done`
+after that agent's output file lands (a machine-readable projection of the agent's Execution Log, no
+new analysis). This makes "which persona is doing what" visible live via the renderer
+`evals/reliability/tm_observe.py` (`--tail`/`--tree`/`--once`). See
+[references/pipeline-observability.md](references/pipeline-observability.md). The stream is presentation
+only; it never drives the analysis.
+
 ### Solo vs Team Decision
 
 **Default: Team mode.** Most real systems benefit from multi-domain analysis. Only use Solo for genuinely simple or narrowly-scoped requests.
