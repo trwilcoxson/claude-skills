@@ -65,15 +65,29 @@ Run the architecture scorecard against this system
 Plan a migration from monolith to microservices
 ```
 
+### `grill-my-architecture-docs` — Architecture Doc Completeness Grilling
+
+Relentlessly interviews you about a software architecture document through a chosen stakeholder lens until the doc is complete enough for that audience to sign off — one question at a time, recommending an answer for each, and writing settled answers back into the doc inline. Each lens has its own enterprise-grade rubric: a security grill is a full threat model, a finops grill is a cost and unit-economics audit. Reads local files or pulls the page from Confluence/Jira via the Atlassian MCP. It builds a context brief on the system before applying any rubric, and gives every rubric item an explicit verdict (gap / covered / not-applicable) so no category is silently skipped.
+
+**Modes:** SECURITY (STRIDE-per-element + assume-breach lateral movement, annotated DFDs, identity, network, cloud landing zone, controls-to-framework mapping), FINOPS (cost drivers, unit economics, multi-year forecast, spend guardrails), COMPLIANCE (GDPR / SOC 2 / HIPAA / PCI data governance + audit evidence), RELIABILITY (SLOs, failure modes, tested DR/failover, degraded modes), PRODUCT (value, scope, metrics, customer SLAs, ownership), ENGINEERING (interface contracts, delivery semantics, stability surface), DATA (event taxonomy, schemas, lineage, data contracts), ARCHITECTURE (target-state alignment, ADRs, lock-in/exit, legacy sunset). No mode runs a cross-cutting triage that scores every lens.
+
+**Usage:**
+```
+/grill-my-architecture-docs security ./design.md
+/grill-my-architecture-docs finops "Payments platform page in Confluence"
+/grill-my-architecture-docs                     # cross-cutting triage → recommends a deep lens
+```
+
 ## Installation
 
 Each skill is a directory you copy into your Claude Code skills folder:
 
 ```bash
 # Global (all projects)
-cp -r skills/python-quality          ~/.claude/skills/python-quality
-cp -r skills/agentic-ai-requirements ~/.claude/skills/agentic-ai-requirements
-cp -r skills/software-architect      ~/.claude/skills/software-architect
+cp -r skills/python-quality             ~/.claude/skills/python-quality
+cp -r skills/agentic-ai-requirements    ~/.claude/skills/agentic-ai-requirements
+cp -r skills/software-architect         ~/.claude/skills/software-architect
+cp -r skills/grill-my-architecture-docs ~/.claude/skills/grill-my-architecture-docs
 ```
 
 Then restart Claude Code or start a new session.
@@ -90,6 +104,9 @@ skills/
   software-architect/
     SKILL.md              # 7-mode architecture assistant with progressive reference loading
     references/           # patterns, C4, ADR, arc42, debt, fitness, migration
+  grill-my-architecture-docs/
+    SKILL.md              # mode router + shared grill protocol (context brief, per-item verdicts)
+    modes/                # 8 per-stakeholder rubrics + overview triage, loaded one at a time
 ```
 
 ## Related
